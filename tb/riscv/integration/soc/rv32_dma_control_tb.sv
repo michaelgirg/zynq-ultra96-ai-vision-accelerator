@@ -310,7 +310,7 @@ module rv32_dma_control_tb;
                                 mm2s_index <= 0;
                                 dma_stream_data <= dma_input_pixel(0);
                                 dma_stream_valid <= 1'b1;
-                                dma_stream_last <= (local_wdata == 1);
+                                dma_stream_last <= (local_wdata == 4);
                             end
                         end
                         16'h0030: s2mm_control <= local_wdata;
@@ -353,7 +353,7 @@ module rv32_dma_control_tb;
             end
 
             if (mm2s_active && dma_stream_valid && dma_stream_ready) begin
-                if (mm2s_index + 1 >= mm2s_length) begin
+                if (mm2s_index + 1 >= (mm2s_length >> 2)) begin
                     mm2s_active <= 1'b0;
                     dma_stream_valid <= 1'b0;
                     dma_stream_last <= 1'b0;
@@ -361,7 +361,7 @@ module rv32_dma_control_tb;
                 else begin
                     mm2s_index <= mm2s_index + 1;
                     dma_stream_data <= dma_input_pixel(mm2s_index + 1);
-                    dma_stream_last <= (mm2s_index + 2 >= mm2s_length);
+                    dma_stream_last <= (mm2s_index + 2 >= (mm2s_length >> 2));
                 end
             end
 
@@ -375,7 +375,7 @@ module rv32_dma_control_tb;
                 endcase
                 if (processed_stream_last != (s2mm_index == 3))
                     fail("DMA output TLAST mismatch");
-                if (s2mm_index + 1 >= s2mm_length) begin
+                if (s2mm_index + 1 >= (s2mm_length >> 2)) begin
                     s2mm_active <= 1'b0;
                 end
                 else begin
@@ -406,7 +406,7 @@ module rv32_dma_control_tb;
         write_imem_word(8,  encode_sw(12'h030, 5'd2, 5'd6));
         write_imem_word(9,  encode_lui(20'h10001, 5'd3));
         write_imem_word(10, encode_sw(12'h048, 5'd3, 5'd6));
-        write_imem_word(11, encode_addi(12'd4, 5'd0, 5'd4));
+        write_imem_word(11, encode_addi(12'd16, 5'd0, 5'd4));
         write_imem_word(12, encode_sw(12'h058, 5'd4, 5'd6));
         write_imem_word(13, encode_sw(12'h000, 5'd2, 5'd6));
         write_imem_word(14, encode_lui(20'h10000, 5'd3));
@@ -438,9 +438,9 @@ module rv32_dma_control_tb;
 
         if (!halted)
             fail("DMA control program did not halt");
-        if (mm2s_source_address != 32'h1000_0000 || mm2s_length != 32'd4)
+        if (mm2s_source_address != 32'h1000_0000 || mm2s_length != 32'd16)
             fail("MM2S programming mismatch");
-        if (s2mm_destination_address != 32'h1000_1000 || s2mm_length != 32'd4)
+        if (s2mm_destination_address != 32'h1000_1000 || s2mm_length != 32'd16)
             fail("S2MM programming mismatch");
         if (mm2s_active || s2mm_active)
             fail("DMA channels remained active after firmware completion");

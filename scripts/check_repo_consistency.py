@@ -9,7 +9,10 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-TEXT_SUFFIXES = {".f", ".json", ".md", ".ps1", ".py", ".sh", ".sv", ".tcl", ".yml", ".yaml"}
+TEXT_SUFFIXES = {
+    ".S", ".c", ".f", ".h", ".json", ".ld", ".md", ".ps1", ".py",
+    ".sh", ".sv", ".tcl", ".yml", ".yaml",
+}
 LINE_ORIENTED_HASH_SUFFIXES = {".h", ".mem"}
 HASH_MANIFEST = ROOT / "generated" / "test_vectors" / "manifest.json"
 VECTOR_MANIFEST = ROOT / "generated" / "test_vectors" / "vector_conv4_manifest.json"
@@ -17,6 +20,10 @@ REGISTER_DOC = ROOT / "docs" / "register_map.md"
 REGISTER_RTL = ROOT / "rtl" / "axis_preprocess_vector_axi_lite.sv"
 SOC_MAP = ROOT / "config" / "soc_address_map.json"
 SOC_MAP_RTL = ROOT / "rtl" / "riscv" / "soc" / "soc_address_map_pkg.sv"
+SOC_MAP_HEADER = ROOT / "software" / "riscv" / "include" / "soc_address_map.h"
+REGISTER_HEADER = ROOT / "software" / "riscv" / "include" / "vision_accel_regs.h"
+MAILBOX_RTL = ROOT / "rtl" / "riscv" / "soc" / "rv32_job_mailbox.sv"
+MAILBOX_HEADER = ROOT / "software" / "riscv" / "include" / "job_mailbox.h"
 PIXELS_PER_FRAME = 28 * 28
 
 
@@ -98,6 +105,22 @@ def check_register_map(errors: list[str]) -> None:
         elif rtl_offsets[name] != int(address, 16):
             errors.append(f"register map offset mismatch for {name}: doc={address}, rtl=0x{rtl_offsets[name]:02X}")
 
+    header = REGISTER_HEADER.read_text(encoding="utf-8")
+    header_offsets = {
+        name: int(value, 16)
+        for name, value in re.findall(
+            r"#define\s+VISION_REG_([A-Z0-9_]+)\s+0x([0-9a-fA-F]+)u", header
+        )
+    }
+    for name, value in header_offsets.items():
+        if name not in rtl_offsets:
+            errors.append(f"RV32 accelerator header lists {name}, absent from RTL constants")
+        elif rtl_offsets[name] != value:
+            errors.append(
+                f"RV32 accelerator header mismatch for {name}: "
+                f"header=0x{value:03X}, rtl=0x{rtl_offsets[name]:03X}"
+            )
+
 
 def check_soc_address_map(errors: list[str]) -> None:
     regions = json.loads(SOC_MAP.read_text(encoding="utf-8"))["regions"]
@@ -107,6 +130,13 @@ def check_soc_address_map(errors: list[str]) -> None:
         for name, value in re.findall(
             r"localparam\s+logic\s+\[31:0\]\s+([A-Z0-9_]+)\s*=\s*32'h([0-9a-fA-F_]+)",
             rtl,
+        )
+    }
+    header = SOC_MAP_HEADER.read_text(encoding="utf-8")
+    header_values = {
+        name: int(value, 16)
+        for name, value in re.findall(
+            r"#define\s+SOC_([A-Z0-9_]+)\s+0x([0-9a-fA-F]+)u", header
         )
     }
 
@@ -125,12 +155,56 @@ def check_soc_address_map(errors: list[str]) -> None:
                     f"SoC map mismatch for {constant}: "
                     f"json=0x{expected:08X}, rtl=0x{rtl_values[constant]:08X}"
                 )
+            if constant not in header_values:
+                errors.append(f"SoC map firmware header is missing {constant}")
+            elif header_values[constant] != expected:
+                errors.append(
+                    f"SoC firmware map mismatch for {constant}: "
+                    f"json=0x{expected:08X}, header=0x{header_values[constant]:08X}"
+                )
         occupied.append((base, base + size, name))
 
     occupied.sort()
     for (_, previous_end, previous_name), (base, _, name) in zip(occupied, occupied[1:]):
         if base < previous_end:
             errors.append(f"SoC regions overlap: {previous_name} and {name}")
+
+
+def check_mailbox_map(errors: list[str]) -> None:
+    rtl = MAILBOX_RTL.read_text(encoding="utf-8")
+    rtl_offsets = {
+        name: int(value, 16)
+        for name, value in re.findall(
+            r"localparam\s+logic\s+\[11:0\]\s+ADDR_([A-Z0-9_]+)\s*=\s*12'h([0-9a-fA-F]+)",
+            rtl,
+        )
+    }
+    header = MAILBOX_HEADER.read_text(encoding="utf-8")
+    header_offsets = {
+        name: int(value, 16)
+        for name, value in re.findall(
+            r"#define\s+MAILBOX_REG_([A-Z0-9_]+)\s+0x([0-9a-fA-F]+)u", header
+        )
+    }
+    for name, value in header_offsets.items():
+        rtl_name = "MAILBOX_ID" if name == "ID" else name
+        if rtl_name not in rtl_offsets:
+            errors.append(f"mailbox firmware header lists {name}, absent from RTL constants")
+        elif rtl_offsets[rtl_name] != value:
+            errors.append(
+                f"mailbox header mismatch for {name}: "
+                f"header=0x{value:03X}, rtl=0x{rtl_offsets[rtl_name]:03X}"
+            )
+
+
+def check_riscv_mem_packing(errors: list[str]) -> None:
+    from bin_to_riscv_mem import pack_lines
+
+    expected = "00000000000000000000000004030201"
+    if pack_lines(bytes((1, 2, 3, 4)), 0) != [expected]:
+        errors.append("RV32 memory packer changed little-endian word/line ordering")
+    if pack_lines(bytes((1, 2, 3, 4)), 16) != ["0" * 32, expected]:
+        errors.append("RV32 memory packer changed section-offset handling")
 
 
 def main() -> None:
@@ -140,6 +214,8 @@ def main() -> None:
     check_vector_manifest(errors)
     check_register_map(errors)
     check_soc_address_map(errors)
+    check_mailbox_map(errors)
+    check_riscv_mem_packing(errors)
     if errors:
         raise SystemExit("Repository consistency failed:\n- " + "\n- ".join(errors))
     print("Repository consistency checks passed")
