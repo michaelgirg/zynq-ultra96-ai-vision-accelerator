@@ -234,6 +234,8 @@ def check_riscv_mem_packing(errors: list[str]) -> None:
         errors.append("RV32 memory packer changed little-endian word ordering")
     if pack_words(bytes((1, 2, 3, 4)), 16) != ["0" * 8] * 4 + [expected]:
         errors.append("RV32 memory packer changed section-offset handling")
+    if pack_words(b"", 0x8000) != []:
+        errors.append("RV32 memory packer should not expand an empty section")
 
 
 def main() -> None:

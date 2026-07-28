@@ -9,6 +9,8 @@ from pathlib import Path
 def pack_words(data: bytes, offset_bytes: int, word_bytes: int = 4) -> list[str]:
     if offset_bytes < 0 or offset_bytes % word_bytes:
         raise ValueError(f"offset must be a nonnegative multiple of {word_bytes} bytes")
+    if not data:
+        return []
     image = bytearray(offset_bytes)
     image.extend(data)
     if len(image) % word_bytes:

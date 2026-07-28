@@ -35,5 +35,16 @@ foreach test {core_pipeline_tb core_pipeline_m_tb core_pipeline_cache_tb core_pi
     quit -sim
 }
 
+if {[file exists "../../../software/riscv/build/controller_imem.mem"] &&
+    [file exists "../../../software/riscv/build/controller_dmem.mem"]} {
+    echo "Running GCC-built RV32 controller firmware"
+    vsim -c $work_lib.rv32_dma_control_tb +COMPILED_FIRMWARE
+    onfinish stop
+    run -all
+    quit -sim
+} else {
+    echo "Skipping compiled firmware test; run scripts/build_riscv_firmware.ps1 first"
+}
+
 echo "Pipeline core integration tests completed"
 quit -code 0

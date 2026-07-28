@@ -68,8 +68,9 @@ model; see [`docs/rv32_soc_integration.md`](docs/rv32_soc_integration.md).
   reset-abort recovery, response flushing, and IRQ crossing pass.
 - UVM: 11 focused tests plus a 100-seed randomized predictor run pass with zero
   UVM errors/fatals, assertion failures, or simulator errors.
-- RV32 SoC: processor preservation, MMIO/AXI, mailbox, host-boot, real-accelerator,
-  and DMA-control tests pass in the complete local Questa regression.
+- RV32 SoC: processor preservation, MMIO/AXI, mailbox, host boot, and both
+  directed and GCC-built firmware DMA-control tests pass against the real
+  accelerator RTL.
 - Targeted functional coverage: 100%.
 
 Run the local checks from the repository root:

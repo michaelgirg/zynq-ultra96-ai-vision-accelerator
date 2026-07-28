@@ -3,7 +3,13 @@
     .type _start, @function
 _start:
     la sp, _stack_top
+
+    // Linker relaxation can otherwise turn this into `mv gp,gp`, leaving the
+    // global pointer uninitialized before any C code executes.
+    .option push
+    .option norelax
     la gp, __global_pointer$
+    .option pop
 
     la t0, _bss_start
     la t1, _bss_end

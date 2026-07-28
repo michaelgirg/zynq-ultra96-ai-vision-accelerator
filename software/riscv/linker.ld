@@ -9,6 +9,11 @@ MEMORY
 
 SECTIONS
 {
+    /DISCARD/ :
+    {
+        *(.note .note.*)
+    }
+
     .text : ALIGN(4)
     {
         KEEP(*(.init))

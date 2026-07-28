@@ -8,7 +8,7 @@ BUILD := build
 CFLAGS := -march=rv32im -mabi=ilp32 -mcmodel=medany -O2 -g \
           -ffreestanding -fno-builtin -fno-common -Wall -Wextra -Werror \
           -ffunction-sections -fdata-sections -Iinclude
-LDFLAGS := -nostdlib -nostartfiles -Wl,--gc-sections -Wl,-Map,$(BUILD)/controller.map \
+LDFLAGS := -nostdlib -nostartfiles -Wl,--build-id=none -Wl,--gc-sections -Wl,-Map,$(BUILD)/controller.map \
            -T linker.ld
 
 .PHONY: all clean

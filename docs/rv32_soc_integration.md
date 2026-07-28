@@ -101,6 +101,7 @@ bytes on both MM2S and S2MM.
 | processor wrapper | firmware-like program through full AXI channels with dependent load use |
 | real accelerator | RV32 configures, starts, polls, and checks a threshold frame against real accelerator RTL |
 | DMA control | RV32 programs MM2S/S2MM, behavioral DMA moves the stream, and mailbox receives completion |
+| compiled firmware | GCC-built RV32IM image boots at reset vector zero and completes the real-accelerator DMA job in 588 simulated cycles |
 | mailbox | 62 checks covering lifecycle, ownership, illegal transitions, and AXI backpressure |
 | preservation | complete imported RV32IM pipeline/cache/M-extension regression remains passing |
 
