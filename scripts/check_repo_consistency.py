@@ -142,9 +142,11 @@ def check_soc_address_map(errors: list[str]) -> None:
     }
     tcl = SOC_MAP_TCL.read_text(encoding="utf-8")
     tcl_regions = {
-        interface: (int(base, 16), int(size[:-1]) * 1024)
+        interface: (int(base, 16), int(size, 16))
         for interface, base, size in re.findall(
-            r'"([A-Za-z0-9_/]+)"\s+\[list\s+(0x[0-9a-fA-F]+)\s+([0-9]+K)\]',
+            r'"([A-Za-z0-9_/]+)"\s+\[list\s+'
+            r'(0x[0-9a-fA-F]+)\s+(0x[0-9a-fA-F]+)\s+'
+            r'(?:arm-rv32|arm-only)\]',
             tcl,
         )
     }

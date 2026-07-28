@@ -247,40 +247,48 @@ foreach irq_index {3 4 5 6 7} {
 }
 connect_bd_net [get_bd_pins irq_concat/dout] [get_bd_pins ps/pl_ps_irq0]
 
-assign_bd_address
-
 if {$enable_rv32_soc} {
-    # Both masters see accelerator/DMA/mailbox at the canonical firmware map.
-    # Host-only memory portals occupy their own 64 KiB windows.
+    # Create the control mappings explicitly so the ARM and RV32 masters see
+    # the exact firmware map. The memory portals are deliberately ARM-only.
     set canonical_regions [dict create \
-        "dma/S_AXI_LITE"  [list 0xA0010000 64K] \
-        "pre/S_AXI"       [list 0xA0000000 4K] \
-        "mailbox/S_AXI"   [list 0xA0020000 4K] \
-        "rv32/S_AXI_IMEM" [list 0xA0030000 64K] \
-        "rv32/S_AXI_DMEM" [list 0xA0040000 64K]]
+        "dma/S_AXI_LITE"  [list 0xA0010000 0x00010000 arm-rv32] \
+        "pre/S_AXI"       [list 0xA0000000 0x00001000 arm-rv32] \
+        "mailbox/S_AXI"   [list 0xA0020000 0x00001000 arm-rv32] \
+        "rv32/S_AXI_IMEM" [list 0xA0030000 0x00010000 arm-only] \
+        "rv32/S_AXI_DMEM" [list 0xA0040000 0x00010000 arm-only]]
+    set control_masters [list \
+        [list arm  [get_bd_addr_spaces ps/Data]] \
+        [list rv32 [get_bd_addr_spaces rv32/M_AXI]]]
+
     foreach interface_name [dict keys $canonical_regions] {
         set slave_segments [get_bd_addr_segs -quiet -of_objects \
             [get_bd_intf_pins $interface_name]]
-        set mappings_updated 0
-        foreach address_space [get_bd_addr_spaces] {
-            foreach mapped_segment [get_bd_addr_segs -quiet -of_objects $address_space] {
-                set target_segment [get_property TARGET_SEGMENT $mapped_segment]
-                foreach slave_segment $slave_segments {
-                    if {$target_segment eq $slave_segment} {
-                        lassign [dict get $canonical_regions $interface_name] region_offset region_range
-                        set_property offset $region_offset $mapped_segment
-                        set_property range $region_range $mapped_segment
-                        incr mappings_updated
-                        puts "Address [get_property NAME $address_space] -> $interface_name: $region_offset / $region_range"
-                    }
-                }
-            }
+        if {[llength $slave_segments] != 1} {
+            error "Expected one slave segment for $interface_name, found [llength $slave_segments]"
         }
-        if {$mappings_updated == 0} {
-            error "No address-space mapping found for $interface_name"
+        set slave_segment [lindex $slave_segments 0]
+        lassign [dict get $canonical_regions $interface_name] \
+            region_offset region_range region_access
+        set region_tag [string map {/ _} $interface_name]
+
+        foreach master_entry $control_masters {
+            lassign $master_entry master_name address_space
+            if {$master_name eq "rv32" && $region_access eq "arm-only"} {
+                exclude_bd_addr_seg -quiet -target_address_space \
+                    $address_space $slave_segment
+                puts "Address $master_name -> $interface_name: excluded (ARM-only)"
+            } else {
+                create_bd_addr_seg -range $region_range -offset $region_offset \
+                    $address_space $slave_segment \
+                    SEG_${master_name}_${region_tag}
+                puts "Address $master_name -> $interface_name: $region_offset / $region_range"
+            }
         }
     }
 }
+
+# Auto-assign only the remaining data-plane mappings (notably DMA to PS DDR).
+assign_bd_address
 
 foreach clock_pin {ps/pl_clk0 ps/pl_clk1 dma/s_axi_lite_aclk dma/m_axi_mm2s_aclk dma/m_axi_s2mm_aclk} {
     set clock_object [get_bd_pins $clock_pin]
