@@ -6,6 +6,8 @@ module slow_line_memory_tb;
     localparam int LINE_BITS   = DATA_WIDTH * LINE_WORDS;
     localparam int DEPTH_WORDS = 64;
     localparam int LATENCY     = 3;
+    localparam int EFFECTIVE_LATENCY =
+        (LATENCY < (LINE_WORDS + 1)) ? (LINE_WORDS + 1) : LATENCY;
 
     logic clk;
     logic rst;
@@ -86,7 +88,7 @@ module slow_line_memory_tb;
         input logic [LINE_BITS-1:0] expected_line,
         input logic expected_fault
     );
-        for (int cycle = 1; cycle < LATENCY; cycle++) begin
+        for (int cycle = 1; cycle < EFFECTIVE_LATENCY; cycle++) begin
             @(posedge clk);
             #1;
             tests++;
@@ -162,12 +164,8 @@ module slow_line_memory_tb;
         host_req_wstrb = '0;
         host_resp_ready = 1'b0;
 
-        for (int line = 0; line < (DEPTH_WORDS / LINE_WORDS); line++) begin
-            for (int word = 0; word < LINE_WORDS; word++) begin
-                dut.mem[line][word * DATA_WIDTH +: DATA_WIDTH] =
-                    32'h1000_0000 + (line * LINE_WORDS) + word;
-            end
-        end
+        for (int word = 0; word < DEPTH_WORDS; word++)
+            dut.mem[word] = 32'h1000_0000 + word;
 
         repeat (2) @(posedge clk);
         @(negedge clk);
@@ -224,7 +222,7 @@ module slow_line_memory_tb;
         };
 
         send_request(1'b1, 32'h0000_0020, replacement_line);
-        repeat (LATENCY - 1) begin
+        repeat (EFFECTIVE_LATENCY - 1) begin
             @(posedge clk);
             #1;
             tests++;

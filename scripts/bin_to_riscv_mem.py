@@ -1,4 +1,4 @@
-"""Pack a little-endian RV32 binary into slow_line_memory hex lines."""
+"""Pack a little-endian RV32 binary into 32-bit block-RAM words."""
 
 from __future__ import annotations
 
@@ -6,16 +6,16 @@ import argparse
 from pathlib import Path
 
 
-def pack_lines(data: bytes, offset_bytes: int, line_bytes: int = 16) -> list[str]:
-    if offset_bytes < 0 or offset_bytes % line_bytes:
-        raise ValueError(f"offset must be a nonnegative multiple of {line_bytes} bytes")
+def pack_words(data: bytes, offset_bytes: int, word_bytes: int = 4) -> list[str]:
+    if offset_bytes < 0 or offset_bytes % word_bytes:
+        raise ValueError(f"offset must be a nonnegative multiple of {word_bytes} bytes")
     image = bytearray(offset_bytes)
     image.extend(data)
-    if len(image) % line_bytes:
-        image.extend(b"\x00" * (line_bytes - len(image) % line_bytes))
+    if len(image) % word_bytes:
+        image.extend(b"\x00" * (word_bytes - len(image) % word_bytes))
     return [
-        image[index : index + line_bytes][::-1].hex()
-        for index in range(0, len(image), line_bytes)
+        image[index : index + word_bytes][::-1].hex()
+        for index in range(0, len(image), word_bytes)
     ]
 
 
@@ -26,7 +26,7 @@ def main() -> None:
     parser.add_argument("output", type=Path)
     args = parser.parse_args()
 
-    lines = pack_lines(args.input.read_bytes(), args.offset_bytes)
+    lines = pack_words(args.input.read_bytes(), args.offset_bytes)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text("\n".join(lines) + ("\n" if lines else ""), encoding="ascii")
 

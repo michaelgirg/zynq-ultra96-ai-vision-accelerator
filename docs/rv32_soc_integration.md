@@ -33,7 +33,7 @@ stalls until the selected target returns a response.
 
 | Region | Base | Size | Ownership |
 | --- | ---: | ---: | --- |
-| local instruction/data memory | `0x0000_0000` | 64 KiB | RV32 private |
+| local instruction/data memory | `0x0000_0000` | 64 KiB each | RV32 private |
 | vision accelerator | `0xA000_0000` | 4 KiB | ARM and RV32 |
 | AXI DMA | `0xA001_0000` | 64 KiB | ARM and RV32 |
 | job mailbox | `0xA002_0000` | 4 KiB | ARM and RV32 |
@@ -42,6 +42,16 @@ stalls until the selected target returns a response.
 
 `config/soc_address_map.json` is canonical. CI compares it with the
 SystemVerilog package and RV32 firmware header.
+
+## Local-memory architecture
+
+The private instruction and data memories use independent, synchronous
+32-bit block-RAM ports. A cache miss transfers its 128-bit line as four
+serialized words while preserving the existing cache-line request/response
+interface. ARM portal accesses share the corresponding memory port and take
+priority only when the memory is idle. This structure supports byte writes,
+firmware initialization, and native Vivado block-RAM inference without
+expanding the memories into flip-flops.
 
 ## MMIO timing
 
@@ -91,7 +101,7 @@ bytes on both MM2S and S2MM.
 | processor wrapper | firmware-like program through full AXI channels with dependent load use |
 | real accelerator | RV32 configures, starts, polls, and checks a threshold frame against real accelerator RTL |
 | DMA control | RV32 programs MM2S/S2MM, behavioral DMA moves the stream, and mailbox receives completion |
-| mailbox | 54 checks covering lifecycle, ownership, illegal transitions, and AXI backpressure |
+| mailbox | 62 checks covering lifecycle, ownership, illegal transitions, and AXI backpressure |
 | preservation | complete imported RV32IM pipeline/cache/M-extension regression remains passing |
 
 The behavioral DMA model verifies controller sequencing without requiring an

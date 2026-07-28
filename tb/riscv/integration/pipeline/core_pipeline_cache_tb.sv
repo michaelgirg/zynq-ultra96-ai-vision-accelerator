@@ -144,7 +144,7 @@ module core_pipeline_cache_tb;
         input int unsigned word_index,
         input logic [31:0] value
     );
-        dut.u_imem.mem[word_index / 4][(word_index % 4) * 32 +: 32] = value;
+        dut.u_imem.mem[word_index] = value;
     endtask
 
     always @(posedge clk) begin
@@ -234,7 +234,7 @@ module core_pipeline_cache_tb;
             check_value(dut.u_regfile.regs[reg_index], 32'd0,
                         "wrong-path register remained clear");
 
-        check_value(dut.u_dmem.mem[0][31:0], 32'd5, "dirty line writeback");
+        check_value(dut.u_dmem.mem[0], 32'd5, "dirty line writeback");
 
         if (!saw_redirect_during_imiss) begin
             $error("Test never overlapped a redirect with an I-cache miss");

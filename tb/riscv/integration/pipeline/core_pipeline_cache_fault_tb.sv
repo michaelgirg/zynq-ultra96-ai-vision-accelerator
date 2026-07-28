@@ -152,14 +152,14 @@ module core_pipeline_cache_fault_tb;
         input int unsigned word_index,
         input logic [31:0] value
     );
-        ifault_dut.u_imem.mem[word_index / 4][(word_index % 4) * 32 +: 32] = value;
+        ifault_dut.u_imem.mem[word_index] = value;
     endtask
 
     task automatic write_dfault_imem_word(
         input int unsigned word_index,
         input logic [31:0] value
     );
-        dfault_dut.u_imem.mem[word_index / 4][(word_index % 4) * 32 +: 32] = value;
+        dfault_dut.u_imem.mem[word_index] = value;
     endtask
 
     always @(posedge clk) begin

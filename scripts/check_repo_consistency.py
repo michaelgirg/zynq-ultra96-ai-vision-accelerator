@@ -227,12 +227,12 @@ def check_mailbox_map(errors: list[str]) -> None:
 
 
 def check_riscv_mem_packing(errors: list[str]) -> None:
-    from bin_to_riscv_mem import pack_lines
+    from bin_to_riscv_mem import pack_words
 
-    expected = "00000000000000000000000004030201"
-    if pack_lines(bytes((1, 2, 3, 4)), 0) != [expected]:
-        errors.append("RV32 memory packer changed little-endian word/line ordering")
-    if pack_lines(bytes((1, 2, 3, 4)), 16) != ["0" * 32, expected]:
+    expected = "04030201"
+    if pack_words(bytes((1, 2, 3, 4)), 0) != [expected]:
+        errors.append("RV32 memory packer changed little-endian word ordering")
+    if pack_words(bytes((1, 2, 3, 4)), 16) != ["0" * 8] * 4 + [expected]:
         errors.append("RV32 memory packer changed section-offset handling")
 
 

@@ -107,7 +107,7 @@ module core_pipeline_m_tb;
         input int unsigned word_index,
         input logic [31:0] value
     );
-        dut.u_imem.mem[word_index / 4][(word_index % 4) * 32 +: 32] = value;
+        dut.u_imem.mem[word_index] = value;
     endtask
 
     task automatic reset_core;

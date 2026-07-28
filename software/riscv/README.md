@@ -13,10 +13,10 @@ cd software/riscv
 make CROSS_COMPILE=riscv64-unknown-elf-
 ```
 
-The build produces separate 128-bit-line `controller_imem.mem` and
-`controller_dmem.mem` files for the Harvard local memories. `IMEM_HEX` and
-`DMEM_HEX` on `rv32_pipeline_axi_top` select those files for simulation or
-synthesis initialization.
+The build produces separate 32-bit-word `controller_imem.mem` and
+`controller_dmem.mem` files for the block-RAM-backed Harvard local memories.
+`IMEM_HEX` and `DMEM_HEX` on `rv32_pipeline_axi_top` select those files for
+simulation or synthesis initialization.
 
 The mailbox `TRANSFER_BYTES` field follows AXI DMA byte-length semantics. The
 accelerator consumes one 32-bit beat per pixel with full `TKEEP`, so a standard
