@@ -65,11 +65,12 @@ verif/
     filelist.f
 ```
 
-## Server Setup
+## Licensed Simulator Setup
+
+Run from the repository root on the licensed simulator host:
 
 ```bash
 source /apps/reconfig/enable_std
-cd ~/zb-ai-vision-verif
 ```
 
 ## Compile
@@ -230,7 +231,7 @@ The separate `verif/uvm_axis/` environment verifies the packed four-filter data
 plane with an AXI-Lite control agent, AXI4-Stream source/sink components,
 scoreboard, functional coverage, and protocol/frame assertions.
 
-The July 10, 2026 UF server regression passed:
+The July 10, 2026 licensed Questa regression passed:
 
 ```text
 vector4_stream_test: PASS, 784/784 packed outputs
@@ -249,7 +250,7 @@ full-TKEEP behavior, stable output during stalls, border/interior pixels, all
 four packed channels, active and saturated values, all four filters and every
 configuration entry, atomic shadow/commit behavior, and busy-time writes.
 
-Run the preserved server regression from the verification-only package:
+Run the preserved regression from the repository root:
 
 ```bash
 source /apps/reconfig/enable_std

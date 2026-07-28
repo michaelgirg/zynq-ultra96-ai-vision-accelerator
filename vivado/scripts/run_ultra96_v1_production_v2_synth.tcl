@@ -27,7 +27,11 @@ if {[info exists ::env(ULTRA96_BOARD_REPO)] &&
     set_param board.repoPaths [list [file normalize $::env(ULTRA96_BOARD_REPO)]]
 }
 open_project $project_path
-set_property ip_repo_paths [list $ip_repo_dir] [current_project]
+set project_ip_repos [list $ip_repo_dir]
+if {[info exists additional_ip_repos]} {
+    set project_ip_repos [concat $project_ip_repos $additional_ip_repos]
+}
+set_property ip_repo_paths $project_ip_repos [current_project]
 update_ip_catalog
 report_ip_status -file [file join $report_dir "ip_status.rpt"]
 

@@ -6,6 +6,8 @@ __pycache__/
 # Questa
 work/
 work_*/
+*_work/
+software/riscv/build/
 transcript
 vsim.wlf
 *.wlf

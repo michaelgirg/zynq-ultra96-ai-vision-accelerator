@@ -1,0 +1,34 @@
+{
+  "regions": {
+    "LOCAL_MEMORY": {
+      "base": "0x00000000",
+      "size": "0x00010000",
+      "access": "rv32-private"
+    },
+    "VISION_ACCEL": {
+      "base": "0xA0000000",
+      "size": "0x00001000",
+      "access": "arm-rv32"
+    },
+    "AXI_DMA": {
+      "base": "0xA0010000",
+      "size": "0x00010000",
+      "access": "arm-rv32"
+    },
+    "MAILBOX": {
+      "base": "0xA0020000",
+      "size": "0x00001000",
+      "access": "arm-rv32"
+    },
+    "HOST_IMEM": {
+      "base": "0xA0030000",
+      "size": "0x00010000",
+      "access": "arm-only"
+    },
+    "HOST_DMEM": {
+      "base": "0xA0040000",
+      "size": "0x00010000",
+      "access": "arm-only"
+    }
+  }
+}

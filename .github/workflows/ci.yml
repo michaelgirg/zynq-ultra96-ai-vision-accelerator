@@ -33,3 +33,28 @@ jobs:
         run: verilator --lint-only --sv --timing --Wall --Wno-fatal --top-module axis_preprocess_vector_axi_lite -f scripts/rtl_filelist.f
       - name: Lint dual-clock wrapper
         run: verilator --lint-only --sv --timing --Wall --Wno-fatal --top-module axis_preprocess_vector_cdc -f scripts/rtl_filelist.f
+      - name: Lint RV32 heterogeneous subsystem
+        run: verilator --lint-only --sv --timing --Wall --Wno-fatal --top-module rv32_pipeline_axi_subsystem -f scripts/rtl_rv32_filelist.f
+
+  rv32-firmware:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install bare-metal RISC-V toolchain
+        run: sudo apt-get update && sudo apt-get install --yes gcc-riscv64-unknown-elf binutils-riscv64-unknown-elf
+      - name: Build firmware and host-loadable images
+        run: make -C software/riscv PYTHON=python3
+      - name: Verify reset-vector placement
+        shell: bash
+        run: |
+          entry=$(riscv64-unknown-elf-readelf -h software/riscv/build/controller.elf | awk '/Entry point address/ {print $4}')
+          text_addr=$(riscv64-unknown-elf-objdump -h software/riscv/build/controller.elf | awk '$2 == ".text" {print $4}')
+          test "$entry" = "0x0"
+          test "$text_addr" = "00000000"
+      - name: Compile ARM boot helper contract
+        run: >-
+          riscv64-unknown-elf-gcc -march=rv32im -mabi=ilp32 -ffreestanding
+          -Wall -Wextra -Werror -Isoftware/ultra96
+          -include software/riscv/build/controller_images.h
+          -c software/ultra96/rv32_controller.c
+          -o software/riscv/build/rv32_controller_host_check.o

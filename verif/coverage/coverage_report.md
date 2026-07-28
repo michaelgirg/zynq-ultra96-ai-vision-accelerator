@@ -160,7 +160,7 @@ scoreboard mismatches, zero UVM errors/fatals, and zero assertion failures.
 
 ## AXI4-Stream Vector Convolution Closure
 
-The July 10, 2026 UF server regression validated the four-filter `MODE=3`
+The July 10, 2026 licensed Questa regression validated the four-filter `MODE=3`
 learned INT8 convolution path with a separate AXI4-Stream UVM environment:
 
 ```text

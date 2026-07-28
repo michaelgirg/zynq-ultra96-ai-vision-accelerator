@@ -9,13 +9,38 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-TEXT_SUFFIXES = {".f", ".json", ".md", ".ps1", ".py", ".sh", ".sv", ".tcl", ".yml", ".yaml"}
+TEXT_SUFFIXES = {
+    ".S", ".c", ".f", ".h", ".json", ".ld", ".md", ".ps1", ".py",
+    ".sh", ".sv", ".tcl", ".txt", ".yml", ".yaml",
+}
 LINE_ORIENTED_HASH_SUFFIXES = {".h", ".mem"}
 HASH_MANIFEST = ROOT / "generated" / "test_vectors" / "manifest.json"
 VECTOR_MANIFEST = ROOT / "generated" / "test_vectors" / "vector_conv4_manifest.json"
 REGISTER_DOC = ROOT / "docs" / "register_map.md"
 REGISTER_RTL = ROOT / "rtl" / "axis_preprocess_vector_axi_lite.sv"
+SOC_MAP = ROOT / "config" / "soc_address_map.json"
+SOC_MAP_RTL = ROOT / "rtl" / "riscv" / "soc" / "soc_address_map_pkg.sv"
+SOC_MAP_HEADER = ROOT / "software" / "riscv" / "include" / "soc_address_map.h"
+SOC_MAP_TCL = ROOT / "vivado" / "scripts" / "create_ultra96_v1_production_v2_project.tcl"
+REGISTER_HEADER = ROOT / "software" / "riscv" / "include" / "vision_accel_regs.h"
+MAILBOX_RTL = ROOT / "rtl" / "riscv" / "soc" / "rv32_job_mailbox.sv"
+MAILBOX_HEADER = ROOT / "software" / "riscv" / "include" / "job_mailbox.h"
 PIXELS_PER_FRAME = 28 * 28
+LOCAL_HYGIENE_PATTERNS = (
+    ("absolute Windows path", re.compile(r"(?i)(?<![A-Za-z0-9_])[A-Z]:[\\/]")),
+    ("user-home path", re.compile(r"(?i)(?:/home/|/Users/)[^/\s`\"']+")),
+    (
+        "personal or private host identifier",
+        re.compile(r"(?i)\b(?:mgirgis1|ece-lnx-[0-9]+|linux\.ece\.ufl\.edu)\b"),
+    ),
+    (
+        "credential-like token",
+        re.compile(r"\b(?:gh[pousr]_[A-Za-z0-9_]{10,}|github_pat_[A-Za-z0-9_]{10,})\b"),
+    ),
+)
+SCAN_EXCLUDED_DIRS = {
+    ".git", ".venv", ".Xil", "__pycache__", "build", "vitis", "work",
+}
 
 
 def repository_path(value: str) -> Path:
@@ -35,14 +60,23 @@ def sha256(path: Path) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
+def is_source_text(path: Path) -> bool:
+    if not path.is_file() or path.suffix not in TEXT_SUFFIXES:
+        return False
+    relative_parts = path.relative_to(ROOT).parts
+    return not any(
+        part == "generated"
+        or part in SCAN_EXCLUDED_DIRS
+        or part.startswith("ip_repo")
+        or part.endswith((".cache", ".gen", ".hw", ".ip_user_files", ".runs", ".sim", ".srcs"))
+        or part.endswith("_vivado")
+        for part in relative_parts
+    )
+
+
 def check_text_hygiene(errors: list[str]) -> None:
     for path in ROOT.rglob("*"):
-        if (
-            not path.is_file()
-            or ".git" in path.parts
-            or "generated" in path.parts
-            or path.suffix not in TEXT_SUFFIXES
-        ):
+        if not is_source_text(path):
             continue
         text = path.read_text(encoding="utf-8")
         if text and not text.endswith("\n"):
@@ -50,6 +84,20 @@ def check_text_hygiene(errors: list[str]) -> None:
         for line_number, line in enumerate(text.splitlines(), start=1):
             if line.endswith((" ", "\t")):
                 errors.append(f"{path.relative_to(ROOT)}:{line_number}: trailing whitespace")
+
+
+def check_local_hygiene(errors: list[str]) -> None:
+    for path in ROOT.rglob("*"):
+        if path == Path(__file__).resolve() or not is_source_text(path):
+            continue
+        text = path.read_text(encoding="utf-8")
+        for description, pattern in LOCAL_HYGIENE_PATTERNS:
+            match = pattern.search(text)
+            if match:
+                line_number = text.count("\n", 0, match.start()) + 1
+                errors.append(
+                    f"{path.relative_to(ROOT)}:{line_number}: {description} is not portable"
+                )
 
 
 def check_hashed_vectors(errors: list[str]) -> None:
@@ -96,13 +144,154 @@ def check_register_map(errors: list[str]) -> None:
         elif rtl_offsets[name] != int(address, 16):
             errors.append(f"register map offset mismatch for {name}: doc={address}, rtl=0x{rtl_offsets[name]:02X}")
 
+    header = REGISTER_HEADER.read_text(encoding="utf-8")
+    header_offsets = {
+        name: int(value, 16)
+        for name, value in re.findall(
+            r"#define\s+VISION_REG_([A-Z0-9_]+)\s+0x([0-9a-fA-F]+)u", header
+        )
+    }
+    for name, value in header_offsets.items():
+        if name not in rtl_offsets:
+            errors.append(f"RV32 accelerator header lists {name}, absent from RTL constants")
+        elif rtl_offsets[name] != value:
+            errors.append(
+                f"RV32 accelerator header mismatch for {name}: "
+                f"header=0x{value:03X}, rtl=0x{rtl_offsets[name]:03X}"
+            )
+
+
+def check_soc_address_map(errors: list[str]) -> None:
+    regions = json.loads(SOC_MAP.read_text(encoding="utf-8"))["regions"]
+    rtl = SOC_MAP_RTL.read_text(encoding="utf-8")
+    rtl_values = {
+        name: int(value.replace("_", ""), 16)
+        for name, value in re.findall(
+            r"localparam\s+logic\s+\[31:0\]\s+([A-Z0-9_]+)\s*=\s*32'h([0-9a-fA-F_]+)",
+            rtl,
+        )
+    }
+    header = SOC_MAP_HEADER.read_text(encoding="utf-8")
+    header_values = {
+        name: int(value, 16)
+        for name, value in re.findall(
+            r"#define\s+SOC_([A-Z0-9_]+)\s+0x([0-9a-fA-F]+)u", header
+        )
+    }
+    tcl = SOC_MAP_TCL.read_text(encoding="utf-8")
+    tcl_regions = {
+        interface: (int(base, 16), int(size, 16))
+        for interface, base, size in re.findall(
+            r'"([A-Za-z0-9_/]+)"\s+\[list\s+'
+            r'(0x[0-9a-fA-F]+)\s+(0x[0-9a-fA-F]+)\s+'
+            r'(?:arm-rv32|arm-only)\]',
+            tcl,
+        )
+    }
+    tcl_region_names = {
+        "VISION_ACCEL": "pre/S_AXI",
+        "AXI_DMA": "dma/S_AXI_LITE",
+        "MAILBOX": "mailbox/S_AXI",
+        "HOST_IMEM": "rv32/S_AXI_IMEM",
+        "HOST_DMEM": "rv32/S_AXI_DMEM",
+    }
+
+    occupied: list[tuple[int, int, str]] = []
+    for name, region in regions.items():
+        base = int(region["base"], 16)
+        size = int(region["size"], 16)
+        if size <= 0 or size & (size - 1):
+            errors.append(f"SoC region {name} size must be a positive power of two")
+        for suffix, expected in (("BASE", base), ("SIZE", size)):
+            constant = f"{name}_{suffix}"
+            if constant not in rtl_values:
+                errors.append(f"SoC map RTL is missing {constant}")
+            elif rtl_values[constant] != expected:
+                errors.append(
+                    f"SoC map mismatch for {constant}: "
+                    f"json=0x{expected:08X}, rtl=0x{rtl_values[constant]:08X}"
+                )
+            if constant not in header_values:
+                errors.append(f"SoC map firmware header is missing {constant}")
+            elif header_values[constant] != expected:
+                errors.append(
+                    f"SoC firmware map mismatch for {constant}: "
+                    f"json=0x{expected:08X}, header=0x{header_values[constant]:08X}"
+                )
+        occupied.append((base, base + size, name))
+        if name in tcl_region_names:
+            interface = tcl_region_names[name]
+            if interface not in tcl_regions:
+                errors.append(f"Vivado map is missing {interface} for {name}")
+            elif tcl_regions[interface] != (base, size):
+                tcl_base, tcl_size = tcl_regions[interface]
+                errors.append(
+                    f"Vivado map mismatch for {name}: "
+                    f"json=0x{base:08X}/0x{size:X}, "
+                    f"tcl=0x{tcl_base:08X}/0x{tcl_size:X}"
+                )
+
+    occupied.sort()
+    for (_, previous_end, previous_name), (base, _, name) in zip(occupied, occupied[1:]):
+        if base < previous_end:
+            errors.append(f"SoC regions overlap: {previous_name} and {name}")
+
+
+def check_mailbox_map(errors: list[str]) -> None:
+    rtl = MAILBOX_RTL.read_text(encoding="utf-8")
+    rtl_offsets = {
+        name: int(value, 16)
+        for name, value in re.findall(
+            r"localparam\s+logic\s+\[11:0\]\s+ADDR_([A-Z0-9_]+)\s*=\s*12'h([0-9a-fA-F]+)",
+            rtl,
+        )
+    }
+    header = MAILBOX_HEADER.read_text(encoding="utf-8")
+    header_offsets = {
+        name: int(value, 16)
+        for name, value in re.findall(
+            r"#define\s+MAILBOX_REG_([A-Z0-9_]+)\s+0x([0-9a-fA-F]+)u", header
+        )
+    }
+    for name, value in header_offsets.items():
+        rtl_name = "MAILBOX_ID" if name == "ID" else name
+        if rtl_name not in rtl_offsets:
+            errors.append(f"mailbox firmware header lists {name}, absent from RTL constants")
+        elif rtl_offsets[rtl_name] != value:
+            errors.append(
+                f"mailbox header mismatch for {name}: "
+                f"header=0x{value:03X}, rtl=0x{rtl_offsets[rtl_name]:03X}"
+            )
+
+
+def check_riscv_mem_packing(errors: list[str]) -> None:
+    from bin_to_riscv_mem import pack_words
+    from riscv_mem_to_header import render_header
+
+    expected = "04030201"
+    if pack_words(bytes((1, 2, 3, 4)), 0) != [expected]:
+        errors.append("RV32 memory packer changed little-endian word ordering")
+    if pack_words(bytes((1, 2, 3, 4)), 16) != ["0" * 8] * 4 + [expected]:
+        errors.append("RV32 memory packer changed section-offset handling")
+    if pack_words(b"", 0x8000) != []:
+        errors.append("RV32 memory packer should not expand an empty section")
+    header = render_header([0x04030201], [])
+    if "RV32_CONTROLLER_IMEM_WORD_COUNT 1u" not in header:
+        errors.append("RV32 host header changed IMEM word-count contract")
+    if "RV32_CONTROLLER_DMEM_WORD_COUNT 0u" not in header:
+        errors.append("RV32 host header changed empty-DMEM contract")
+
 
 def main() -> None:
     errors: list[str] = []
     check_text_hygiene(errors)
+    check_local_hygiene(errors)
     check_hashed_vectors(errors)
     check_vector_manifest(errors)
     check_register_map(errors)
+    check_soc_address_map(errors)
+    check_mailbox_map(errors)
+    check_riscv_mem_packing(errors)
     if errors:
         raise SystemExit("Repository consistency failed:\n- " + "\n- ".join(errors))
     print("Repository consistency checks passed")
