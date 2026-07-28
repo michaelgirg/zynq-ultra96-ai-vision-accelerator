@@ -43,4 +43,6 @@ installed through the Windows Vivado Store, the wrapper discovers that board
 repository automatically. For any other location, append
 `-BoardRepo "<board-store>"`.
 The new generated project is `vivado/u96v2_rv32_soc_vivado`; the bitstream and
-bitstream-inclusive XSA are generated only after implementation succeeds.
+bitstream-inclusive XSA are generated only after implementation succeeds. The
+RV32 project creator safely replaces this ignored generated project directory,
+so `-Stage all` can be rerun after a failed build.

@@ -19,5 +19,6 @@ set ultra96_board_preferred [list \
     "avnet.com:ultra96v2:part0:1.0" \
 ]
 set enable_rv32_soc 1
+set recreate_existing_project 1
 
 source [file join $script_dir "create_ultra96_v1_production_v2_project.tcl"]

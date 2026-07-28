@@ -75,7 +75,17 @@ puts "Repo root: $repo_root"
 puts "$ultra96_board_label production-v2 project: $project_dir"
 
 if {[file exists [file join $project_dir "$project_name.xpr"]]} {
-    error "Project already exists: $project_dir. This script will not overwrite it."
+    if {[info exists recreate_existing_project] && $recreate_existing_project} {
+        set expected_project_parent [file normalize [file join $repo_root "vivado"]]
+        if {[file dirname $project_dir] ne $expected_project_parent ||
+            ![string match "*_vivado" [file tail $project_dir]]} {
+            error "Refusing to remove unexpected project directory: $project_dir"
+        }
+        puts "Replacing generated project: $project_dir"
+        file delete -force $project_dir
+    } else {
+        error "Project already exists: $project_dir. This script will not overwrite it."
+    }
 }
 
 if {![file exists [file join $ip_repo_dir "axis_preprocess_vector_cdc/component.xml"]]} {
