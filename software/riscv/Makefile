@@ -13,7 +13,7 @@ LDFLAGS := -nostdlib -nostartfiles -Wl,--build-id=none -Wl,--gc-sections -Wl,-Ma
 
 .PHONY: all clean
 
-all: $(BUILD)/controller_imem.mem $(BUILD)/controller_dmem.mem $(BUILD)/controller.dis
+all: $(BUILD)/controller_imem.mem $(BUILD)/controller_dmem.mem $(BUILD)/controller_images.h $(BUILD)/controller.dis
 
 $(BUILD):
 	mkdir -p $(BUILD)
@@ -38,6 +38,9 @@ $(BUILD)/controller_imem.mem: $(BUILD)/controller_imem.bin
 
 $(BUILD)/controller_dmem.mem: $(BUILD)/controller_dmem.bin
 	$(PYTHON) ../../scripts/bin_to_riscv_mem.py --offset-bytes 0x8000 $< $@
+
+$(BUILD)/controller_images.h: $(BUILD)/controller_imem.mem $(BUILD)/controller_dmem.mem
+	$(PYTHON) ../../scripts/riscv_mem_to_header.py $^ $@
 
 $(BUILD)/controller.dis: $(BUILD)/controller.elf
 	$(OBJDUMP) -d -S $< > $@

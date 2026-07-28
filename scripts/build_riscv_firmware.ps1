@@ -60,6 +60,7 @@ $imemBin = Join-Path $BuildDir "controller_imem.bin"
 $dmemBin = Join-Path $BuildDir "controller_dmem.bin"
 $imemMem = Join-Path $BuildDir "controller_imem.mem"
 $dmemMem = Join-Path $BuildDir "controller_dmem.mem"
+$imageHeader = Join-Path $BuildDir "controller_images.h"
 $disassembly = Join-Path $BuildDir "controller.dis"
 
 $cflags = @(
@@ -106,6 +107,10 @@ Invoke-Checked $PythonExe @(
     (Join-Path $repoRoot "scripts\bin_to_riscv_mem.py"),
     "--offset-bytes", "0x8000", $dmemBin, $dmemMem
 ) "DMEM packing"
+Invoke-Checked $PythonExe @(
+    (Join-Path $repoRoot "scripts\riscv_mem_to_header.py"),
+    $imemMem, $dmemMem, $imageHeader
+) "host-image header generation"
 
 $disassemblyText = & $objdump -d -S $elf 2>&1
 if ($LASTEXITCODE -ne 0) {
@@ -117,3 +122,4 @@ Invoke-Checked $size @("-A", $elf) "firmware size report"
 Write-Host "PASS: RV32 firmware built with entry point and .text at 0x00000000."
 Write-Host "IMEM image: $imemMem"
 Write-Host "DMEM image: $dmemMem"
+Write-Host "Host image header: $imageHeader"

@@ -37,3 +37,10 @@ firmware control sequence and the hand-authored directed sequence are both
 covered by the local Questa regression when the firmware images are present.
 The compiled-image suite covers successful completion plus bad descriptor,
 accelerator-ID, MM2S, S2MM, and accelerator-diagnostic failures.
+
+Build and run that complete suite in one command:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\run_riscv_firmware_regression.ps1 `
+  -ToolchainBin "<Vitis-install>\gnu\riscv\nt\bin"
+```

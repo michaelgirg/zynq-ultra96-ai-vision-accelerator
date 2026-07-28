@@ -228,6 +228,7 @@ def check_mailbox_map(errors: list[str]) -> None:
 
 def check_riscv_mem_packing(errors: list[str]) -> None:
     from bin_to_riscv_mem import pack_words
+    from riscv_mem_to_header import render_header
 
     expected = "04030201"
     if pack_words(bytes((1, 2, 3, 4)), 0) != [expected]:
@@ -236,6 +237,11 @@ def check_riscv_mem_packing(errors: list[str]) -> None:
         errors.append("RV32 memory packer changed section-offset handling")
     if pack_words(b"", 0x8000) != []:
         errors.append("RV32 memory packer should not expand an empty section")
+    header = render_header([0x04030201], [])
+    if "RV32_CONTROLLER_IMEM_WORD_COUNT 1u" not in header:
+        errors.append("RV32 host header changed IMEM word-count contract")
+    if "RV32_CONTROLLER_DMEM_WORD_COUNT 0u" not in header:
+        errors.append("RV32 host header changed empty-DMEM contract")
 
 
 def main() -> None:

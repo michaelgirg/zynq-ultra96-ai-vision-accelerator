@@ -53,6 +53,45 @@ void rv32_release_from_reset(uintptr_t mailbox_base)
     write32(mailbox_base, MB_BOOT_CONTROL, 1u);
 }
 
+void rv32_hold_in_reset(uintptr_t mailbox_base)
+{
+    write32(mailbox_base, MB_BOOT_CONTROL, 0u);
+}
+
+int rv32_boot_controller(
+    uintptr_t mailbox_base,
+    uintptr_t imem_portal_base,
+    uintptr_t dmem_portal_base,
+    const uint32_t *imem_words,
+    size_t imem_word_count,
+    const uint32_t *dmem_words,
+    size_t dmem_word_count
+)
+{
+    if (imem_word_count > RV32_LOCAL_MEMORY_WORDS ||
+        dmem_word_count > RV32_LOCAL_MEMORY_WORDS ||
+        (imem_word_count != 0u && imem_words == NULL) ||
+        (dmem_word_count != 0u && dmem_words == NULL)) {
+        return RV32_BOOT_BAD_IMAGE;
+    }
+
+    rv32_hold_in_reset(mailbox_base);
+    rv32_load_memory_words(imem_portal_base, imem_words, imem_word_count);
+    rv32_load_memory_words(dmem_portal_base, dmem_words, dmem_word_count);
+
+    if (rv32_verify_memory_words(
+            imem_portal_base, imem_words, imem_word_count) != 0) {
+        return RV32_BOOT_IMEM_VERIFY;
+    }
+    if (rv32_verify_memory_words(
+            dmem_portal_base, dmem_words, dmem_word_count) != 0) {
+        return RV32_BOOT_DMEM_VERIFY;
+    }
+
+    rv32_release_from_reset(mailbox_base);
+    return RV32_BOOT_OK;
+}
+
 int rv32_submit_job(uintptr_t mailbox_base, const rv32_vision_job_t *job)
 {
     uint32_t status = read32(mailbox_base, MB_STATUS);
