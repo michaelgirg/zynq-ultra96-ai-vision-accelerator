@@ -7,10 +7,15 @@ implemented and verified as a Zynq UltraScale+ production design.
 
 ```mermaid
 flowchart LR
-    PS["Zynq Processing System"] -->|"AXI4-Lite, 100 MHz"| CDC["Dual-clock CDC bridge"]
-    DMA_IN["AXI DMA MM2S"] -->|"AXI4-Stream, 150 MHz"| IP["Vision accelerator"]
+    PS["ARM Cortex-A53 host"] --> CTRL["AXI SmartConnect"]
+    RV["Five-stage RV32IM controller"] -->|"AXI4-Lite master"| CTRL
+    PS -->|"Load I/D memory"| RV
+    CTRL --> MAIL["Job mailbox"]
+    CTRL --> DMA["AXI DMA"]
+    CTRL -->|"100 MHz"| CDC["Dual-clock CDC bridge"]
+    DMA -->|"MM2S, 150 MHz"| IP["Vision accelerator"]
     CDC --> IP
-    IP -->|"AXI4-Stream"| DMA_OUT["AXI DMA S2MM"]
+    IP -->|"S2MM"| DMA
     IP --> IRQ["Interrupt"]
 ```
 
@@ -26,13 +31,13 @@ The design supports four selectable modes:
 The production wrapper adds AXI4-Lite control, AXI DMA integration, diagnostics,
 interrupt status, register-version discovery, and a dual-clock CDC bridge.
 
-An optional heterogeneous SoC layer adds a five-stage RV32IM control processor
+A heterogeneous SoC configuration adds a five-stage RV32IM control processor
 with private caches, uncached AXI4-Lite accelerator/DMA access, an ARM/RV32 job
 mailbox, and host-loadable instruction/data memory. Questa tests execute the
 complete controller flow against the real accelerator RTL and a behavioral DMA
 model; see [`docs/rv32_soc_integration.md`](docs/rv32_soc_integration.md).
 
-## Implementation snapshot
+## Accelerator-only production snapshot
 
 | Item | Result |
 | --- | --- |
@@ -43,6 +48,17 @@ model; see [`docs/rv32_soc_integration.md`](docs/rv32_soc_integration.md).
 | Utilization | 15.54% LUT, 9.64% registers, 2.78% BRAM, 12.50% DSP |
 | Estimated power | 2.084 W |
 
+## RV32 heterogeneous-SoC checkpoint
+
+| Item | Routed result |
+| --- | --- |
+| Target and clocks | Ultra96-V2; 100 MHz control, 150.015 MHz stream/data |
+| Timing | +2.047 ns setup WNS, +0.011 ns hold WHS, zero failing endpoints |
+| Signoff checks | Zero CDC warning/critical, methodology, and DRC error/critical-warning findings |
+| Utilization | 23.62% LUT, 15.51% registers, 17.59% BRAM, 13.61% DSP |
+| RV32 local memory | 64 KiB IMEM + 64 KiB DMEM mapped to 32 RAMB36E2 blocks |
+| Estimated power | 2.119 W |
+
 ## Verification summary
 
 - Python predictor: 6,272/6,272 packed outputs matched.
@@ -52,6 +68,8 @@ model; see [`docs/rv32_soc_integration.md`](docs/rv32_soc_integration.md).
   reset-abort recovery, response flushing, and IRQ crossing pass.
 - UVM: 11 focused tests plus a 100-seed randomized predictor run pass with zero
   UVM errors/fatals, assertion failures, or simulator errors.
+- RV32 SoC: processor preservation, MMIO/AXI, mailbox, host-boot, real-accelerator,
+  and DMA-control tests pass in the complete local Questa regression.
 - Targeted functional coverage: 100%.
 
 Run the local checks from the repository root:
@@ -66,6 +84,10 @@ The [Ultra96-V2 production release candidate](https://github.com/michaelgirg/zyn
 contains the bitstream, bitstream-inclusive XSA, and SHA256 manifest. Generated
 Vivado/Vitis projects, simulator databases, logs, local machine settings, and
 release binaries are excluded from the source tree.
+
+The RV32 SoC build also emits a bitstream and bitstream-inclusive XSA. Their
+checkpoint integrity hashes are tracked in
+[`hardware/reports/ultra96_v2_rv32_soc_sha256.txt`](hardware/reports/ultra96_v2_rv32_soc_sha256.txt).
 
 ## Ultra96-V2 production flow
 

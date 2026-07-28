@@ -24,9 +24,9 @@ Generated Vivado projects, logs, reports, bitstreams, and XSA files are intentio
 
 ## RV32 heterogeneous control SoC
 
-The RV32 flow is separate from the released accelerator-only checkpoint. It
-adds the five-stage controller as SmartConnect master 1, the hardware mailbox,
-and ARM-loadable 64 KiB instruction/data portals while preserving the 100 MHz
+The RV32 flow extends the released accelerator-only checkpoint with the
+five-stage controller as SmartConnect master 1, the hardware mailbox, and
+ARM-loadable 64 KiB instruction/data portals while preserving the 100 MHz
 control and 150 MHz stream domains.
 
 On Windows, run all RV32 packaging, project creation, synthesis,
@@ -46,3 +46,8 @@ The new generated project is `vivado/u96v2_rv32_soc_vivado`; the bitstream and
 bitstream-inclusive XSA are generated only after implementation succeeds. The
 RV32 project creator safely replaces this ignored generated project directory,
 so `-Stage all` can be rerun after a failed build.
+
+The completed reference build closes timing at +2.047 ns setup WNS and +0.011
+ns hold WHS with zero failing endpoints. See
+`docs/rv32_soc_integration.md` for utilization and signoff details, and
+`hardware/reports/ultra96_v2_rv32_soc_sha256.txt` for artifact hashes.

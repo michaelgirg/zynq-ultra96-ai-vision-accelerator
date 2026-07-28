@@ -105,6 +105,36 @@ bytes on both MM2S and S2MM.
 | preservation | complete imported RV32IM pipeline/cache/M-extension regression remains passing |
 
 The behavioral DMA model verifies controller sequencing without requiring an
-encrypted Xilinx simulation model. Vivado synthesis, implementation, CDC/DRC,
-and bitstream evidence are a separate tool run. Physical-board execution must
-not be claimed until an Ultra96-V2 is available.
+encrypted Xilinx simulation model.
+
+## Ultra96-V2 implementation evidence
+
+Vivado 2025.2 completed synthesis, routing, report generation, bitstream
+generation, and bitstream-inclusive XSA export for `xczu3eg-sbva484-1-i`.
+
+| Metric | Routed result |
+| --- | ---: |
+| Control / stream clocks | 100 MHz / 150.015 MHz |
+| Setup WNS / TNS / failing endpoints | +2.047 ns / 0.000 ns / 0 |
+| Hold WHS / THS / failing endpoints | +0.011 ns / 0.000 ns / 0 |
+| Pulse-width slack / failing endpoints | +1.833 ns / 0 |
+| CLB LUTs | 16,663 / 70,560 (23.62%) |
+| CLB registers | 21,890 / 141,120 (15.51%) |
+| Block RAM tiles | 38 / 216 (17.59%) |
+| DSP48E2 blocks | 49 / 360 (13.61%) |
+| RV32 hierarchy | 4,961 LUTs, 7,496 registers, 32 RAMB36E2, 4 DSP48E2 |
+| Estimated on-chip power | 2.119 W (medium confidence) |
+
+Both 64 KiB local memories infer as block RAM: IMEM and DMEM each use 16
+`RAMB36E2` primitives. The CDC report contains 29 informational entries for
+recognized `ASYNC_REG` synchronizers and no warning or critical findings. The
+methodology report has zero findings. DRC has zero errors or critical warnings;
+its 97 warnings comprise 94 DSP pipelining suggestions, two AXI DMA FIFO
+collision advisories, and one AXI DMA unused-load warning. Timing closes with
+all user constraints met, so these warnings are retained as reviewed tool/IP
+advisories rather than hidden.
+
+The generated bitstream and XSA hashes are recorded in
+`hardware/reports/ultra96_v2_rv32_soc_sha256.txt`. Physical-board execution is
+a separate runtime-validation milestone and is not part of this implementation
+checkpoint.
