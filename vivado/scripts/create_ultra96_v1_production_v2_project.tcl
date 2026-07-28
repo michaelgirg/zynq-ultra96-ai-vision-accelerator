@@ -192,7 +192,7 @@ connect_bd_net [get_bd_pins ps/pl_clk0] [get_bd_pins sc_ctrl/aclk]
 connect_bd_net [get_bd_pins ps/pl_clk0] [get_bd_pins dma/s_axi_lite_aclk]
 connect_bd_net [get_bd_pins ps/pl_clk0] [get_bd_pins pre/S_AXI_ACLK]
 if {$enable_rv32_soc} {
-    connect_bd_net [get_bd_pins ps/pl_clk0] [get_bd_pins rv32/clk_i]
+    connect_bd_net [get_bd_pins ps/pl_clk0] [get_bd_pins rv32/S_AXI_ACLK]
     connect_bd_net [get_bd_pins ps/pl_clk0] [get_bd_pins mailbox/S_AXI_ACLK]
 }
 

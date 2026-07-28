@@ -66,11 +66,14 @@ set_property description "Five-stage RV32IM controller with private caches, one-
 set_property version 1.0 $core
 set_property supported_families {zynquplus Production} $core
 ipx::infer_bus_interfaces $core
+if {[llength [ipx::get_bus_interfaces -quiet S_AXI_ACLK -of_objects $core]] == 0} {
+    error "RV32 subsystem S_AXI_ACLK clock interface was not inferred."
+}
 foreach busif_name {M_AXI S_AXI_IMEM S_AXI_DMEM} {
     if {[llength [ipx::get_bus_interfaces -quiet $busif_name -of_objects $core]] == 0} {
         error "RV32 subsystem bus interface $busif_name was not inferred."
     }
-    ipx::associate_bus_interfaces -busif $busif_name -clock clk_i $core
+    ipx::associate_bus_interfaces -busif $busif_name -clock S_AXI_ACLK $core
 }
 ipx::update_checksums $core
 ipx::check_integrity $core

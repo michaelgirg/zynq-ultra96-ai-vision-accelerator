@@ -51,7 +51,7 @@ module rv32_pipeline_axi_subsystem_tb;
         .IMEM_WORDS(64),
         .DMEM_WORDS(64)
     ) dut (
-        .clk_i(clk),
+        .S_AXI_ACLK(clk),
         .system_rst_i(system_rst),
         .core_rst_i(core_rst),
         .current_pc_o(),

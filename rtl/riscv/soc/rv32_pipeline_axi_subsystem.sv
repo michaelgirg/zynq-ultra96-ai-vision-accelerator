@@ -4,7 +4,7 @@ module rv32_pipeline_axi_subsystem #(
     parameter string IMEM_HEX = "",
     parameter string DMEM_HEX = ""
 ) (
-    input  logic        clk_i,
+    input  logic        S_AXI_ACLK,
     input  logic        system_rst_i,
     input  logic        core_rst_i,
     output logic [31:0] current_pc_o,
@@ -94,7 +94,7 @@ module rv32_pipeline_axi_subsystem #(
         .IMEM_HEX  (IMEM_HEX),
         .DMEM_HEX  (DMEM_HEX)
     ) u_processor (
-        .clk_i,
+        .clk_i(S_AXI_ACLK),
         .rst_i(core_reset),
         .memory_rst_i(system_rst_i),
         .current_pc_o,
@@ -131,7 +131,7 @@ module rv32_pipeline_axi_subsystem #(
     );
 
     rv32_axi_memory_portal u_imem_portal (
-        .S_AXI_ACLK(clk_i), .S_AXI_ARESETN(!system_rst_i),
+        .S_AXI_ACLK, .S_AXI_ARESETN(!system_rst_i),
         .S_AXI_AWADDR(S_AXI_IMEM_AWADDR), .S_AXI_AWPROT(S_AXI_IMEM_AWPROT),
         .S_AXI_AWVALID(S_AXI_IMEM_AWVALID), .S_AXI_AWREADY(S_AXI_IMEM_AWREADY),
         .S_AXI_WDATA(S_AXI_IMEM_WDATA), .S_AXI_WSTRB(S_AXI_IMEM_WSTRB),
@@ -150,7 +150,7 @@ module rv32_pipeline_axi_subsystem #(
     );
 
     rv32_axi_memory_portal u_dmem_portal (
-        .S_AXI_ACLK(clk_i), .S_AXI_ARESETN(!system_rst_i),
+        .S_AXI_ACLK, .S_AXI_ARESETN(!system_rst_i),
         .S_AXI_AWADDR(S_AXI_DMEM_AWADDR), .S_AXI_AWPROT(S_AXI_DMEM_AWPROT),
         .S_AXI_AWVALID(S_AXI_DMEM_AWVALID), .S_AXI_AWREADY(S_AXI_DMEM_AWREADY),
         .S_AXI_WDATA(S_AXI_DMEM_WDATA), .S_AXI_WSTRB(S_AXI_DMEM_WSTRB),
