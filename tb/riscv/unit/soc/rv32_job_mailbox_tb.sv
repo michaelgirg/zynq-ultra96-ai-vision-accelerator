@@ -22,6 +22,7 @@ module rv32_job_mailbox_tb;
     logic [1:0] rresp;
     logic rvalid;
     logic rready;
+    logic rv32_resetn;
     integer checks = 0;
 
     always #5 clk = ~clk;
@@ -36,7 +37,8 @@ module rv32_job_mailbox_tb;
         .S_AXI_ARADDR(araddr), .S_AXI_ARPROT(arprot),
         .S_AXI_ARVALID(arvalid), .S_AXI_ARREADY(arready),
         .S_AXI_RDATA(rdata), .S_AXI_RRESP(rresp),
-        .S_AXI_RVALID(rvalid), .S_AXI_RREADY(rready)
+        .S_AXI_RVALID(rvalid), .S_AXI_RREADY(rready),
+        .rv32_resetn(rv32_resetn)
     );
 
     task automatic check(input logic condition, input string message);
@@ -125,6 +127,9 @@ module rv32_job_mailbox_tb;
 
         axi_read(12'h028, 32'h5A42_4D42, 2'b00);
         axi_read(12'h004, 32'h0, 2'b00);
+        axi_read(12'h02C, 32'h0, 2'b00);
+        axi_write(12'h02C, 32'h1, 2'b00, 1'b0);
+        axi_read(12'h02C, 32'h1, 2'b00);
         axi_write(12'h008, 32'h1000_0000, 2'b00, 1'b1);
         axi_write(12'h00C, 32'h1000_1000, 2'b00, 1'b0);
         axi_write(12'h010, 32'd784, 2'b00, 1'b1);

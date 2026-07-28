@@ -26,7 +26,18 @@ module slow_line_memory #(
     output logic                               resp_valid,
     input  logic                               resp_ready,
     output logic [(DATA_WIDTH*LINE_WORDS)-1:0] resp_rdata,
-    output logic                               resp_fault
+    output logic                               resp_fault,
+
+    input  logic                       host_req_valid,
+    output logic                       host_req_ready,
+    input  logic                       host_req_write,
+    input  logic [ADDR_WIDTH-1:0]      host_req_addr,
+    input  logic [DATA_WIDTH-1:0]      host_req_wdata,
+    input  logic [(DATA_WIDTH/8)-1:0]  host_req_wstrb,
+    output logic                       host_resp_valid,
+    input  logic                       host_resp_ready,
+    output logic [DATA_WIDTH-1:0]      host_resp_rdata,
+    output logic                       host_resp_fault
 );
 
     localparam int BYTES_PER_WORD   = DATA_WIDTH / 8;
@@ -35,6 +46,7 @@ module slow_line_memory #(
     localparam int DEPTH_LINES      = DEPTH_WORDS / LINE_WORDS;
     localparam int BYTE_OFFSET_BITS = $clog2(BYTES_PER_WORD);
     localparam int LINE_OFFSET_BITS = $clog2(LINE_BYTES);
+    localparam int WORD_OFFSET_BITS = $clog2(LINE_WORDS);
     localparam int LINE_INDEX_BITS  = (DEPTH_LINES <= 1) ? 1 : $clog2(DEPTH_LINES);
     localparam int COUNT_BITS       = (LATENCY <= 1) ? 1 : $clog2(LATENCY + 1);
 
@@ -59,10 +71,21 @@ module slow_line_memory #(
 
     logic [LINE_BITS-1:0] pending_read_line;
     logic [LINE_INDEX_BITS-1:0] request_line_index;
+    logic [LINE_INDEX_BITS-1:0] host_line_index;
+    logic [WORD_OFFSET_BITS-1:0] host_word_offset;
+    logic host_request_fault;
 
     assign req_ready = (state == MEMORY_IDLE);
+    assign host_req_ready = !host_resp_valid;
     assign request_line_index =
         LINE_INDEX_BITS'($unsigned(req_addr) >> LINE_OFFSET_BITS);
+    assign host_line_index =
+        LINE_INDEX_BITS'($unsigned(host_req_addr) >> LINE_OFFSET_BITS);
+    assign host_word_offset =
+        WORD_OFFSET_BITS'($unsigned(host_req_addr) >> BYTE_OFFSET_BITS);
+    assign host_request_fault =
+        (host_req_addr[BYTE_OFFSET_BITS-1:0] != '0) ||
+        (($unsigned(host_req_addr) >> BYTE_OFFSET_BITS) >= DEPTH_WORDS);
 
     function automatic logic request_fault(
         input logic [ADDR_WIDTH-1:0] address
@@ -105,6 +128,9 @@ module slow_line_memory #(
             resp_valid     <= 1'b0;
             resp_rdata     <= '0;
             resp_fault     <= 1'b0;
+            host_resp_valid <= 1'b0;
+            host_resp_rdata <= '0;
+            host_resp_fault <= 1'b0;
         end
         else begin
             case (state)
@@ -157,6 +183,27 @@ module slow_line_memory #(
                     state      <= MEMORY_IDLE;
                 end
             endcase
+
+            if ((host_req_valid === 1'b1) && host_req_ready) begin
+                host_resp_fault <= host_request_fault;
+                host_resp_rdata <= '0;
+                if (!host_request_fault) begin
+                    host_resp_rdata <=
+                        mem[host_line_index][host_word_offset*DATA_WIDTH +: DATA_WIDTH];
+                    if (host_req_write) begin
+                        for (int byte_index = 0; byte_index < BYTES_PER_WORD; byte_index++) begin
+                            if (host_req_wstrb[byte_index]) begin
+                                mem[host_line_index][host_word_offset*DATA_WIDTH + byte_index*8 +: 8] <=
+                                    host_req_wdata[byte_index*8 +: 8];
+                            end
+                        end
+                    end
+                end
+                host_resp_valid <= 1'b1;
+            end
+            else if (host_resp_valid && host_resp_ready) begin
+                host_resp_valid <= 1'b0;
+            end
         end
     end
 

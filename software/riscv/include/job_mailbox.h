@@ -11,6 +11,7 @@
 #define MAILBOX_REG_RESULT         0x020u
 #define MAILBOX_REG_ERROR_CODE     0x024u
 #define MAILBOX_REG_ID             0x028u
+#define MAILBOX_REG_BOOT_CONTROL   0x02Cu
 
 #define MAILBOX_CMD_SUBMIT         0x00000001u
 #define MAILBOX_CMD_CLAIM          0x00000002u

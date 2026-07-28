@@ -21,7 +21,8 @@ module rv32_job_mailbox #(
     output logic [31:0]                       S_AXI_RDATA,
     output logic [1:0]                        S_AXI_RRESP,
     output logic                              S_AXI_RVALID,
-    input  logic                              S_AXI_RREADY
+    input  logic                              S_AXI_RREADY,
+    output logic                              rv32_resetn
 );
     localparam logic [1:0] AXI_OKAY = 2'b00;
     localparam logic [1:0] AXI_SLVERR = 2'b10;
@@ -37,6 +38,7 @@ module rv32_job_mailbox #(
     localparam logic [11:0] ADDR_RESULT         = 12'h020;
     localparam logic [11:0] ADDR_ERROR_CODE     = 12'h024;
     localparam logic [11:0] ADDR_MAILBOX_ID     = 12'h028;
+    localparam logic [11:0] ADDR_BOOT_CONTROL   = 12'h02C;
 
     localparam logic [31:0] MAILBOX_ID = 32'h5A42_4D42; // "ZBMB"
 
@@ -114,6 +116,7 @@ module rv32_job_mailbox #(
                     ADDR_JOB_ID: valid_write = idle && !terminal;
                     ADDR_RESULT,
                     ADDR_ERROR_CODE: valid_write = busy;
+                    ADDR_BOOT_CONTROL: valid_write = 1'b1;
                     default: valid_write = 1'b0;
                 endcase
             end
@@ -136,7 +139,8 @@ module rv32_job_mailbox #(
                     ADDR_JOB_ID,
                     ADDR_RESULT,
                     ADDR_ERROR_CODE,
-                    ADDR_MAILBOX_ID: valid_read = 1'b1;
+                    ADDR_MAILBOX_ID,
+                    ADDR_BOOT_CONTROL: valid_read = 1'b1;
                     default: valid_read = 1'b0;
                 endcase
             end
@@ -156,6 +160,7 @@ module rv32_job_mailbox #(
                 ADDR_RESULT:         read_data = result;
                 ADDR_ERROR_CODE:     read_data = error_code;
                 ADDR_MAILBOX_ID:     read_data = MAILBOX_ID;
+                ADDR_BOOT_CONTROL:   read_data = {31'b0, rv32_resetn};
                 default:             read_data = 32'b0;
             endcase
         end
@@ -182,6 +187,7 @@ module rv32_job_mailbox #(
             job_id <= '0;
             result <= '0;
             error_code <= '0;
+            rv32_resetn <= 1'b0;
         end
         else begin
             if (S_AXI_AWVALID && S_AXI_AWREADY) begin
@@ -238,6 +244,7 @@ module rv32_job_mailbox #(
                         ADDR_JOB_ID:         job_id <= wdata;
                         ADDR_RESULT:         result <= wdata;
                         ADDR_ERROR_CODE:     error_code <= wdata;
+                        ADDR_BOOT_CONTROL:   rv32_resetn <= wdata[0];
                         default: begin end
                     endcase
                 end

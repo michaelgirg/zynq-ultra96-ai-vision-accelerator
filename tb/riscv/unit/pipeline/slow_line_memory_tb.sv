@@ -18,6 +18,16 @@ module slow_line_memory_tb;
     logic resp_ready;
     logic [LINE_BITS-1:0] resp_rdata;
     logic resp_fault;
+    logic host_req_valid;
+    logic host_req_ready;
+    logic host_req_write;
+    logic [31:0] host_req_addr;
+    logic [31:0] host_req_wdata;
+    logic [3:0] host_req_wstrb;
+    logic host_resp_valid;
+    logic host_resp_ready;
+    logic [31:0] host_resp_rdata;
+    logic host_resp_fault;
 
     int errors;
     int tests;
@@ -38,7 +48,17 @@ module slow_line_memory_tb;
         .resp_valid(resp_valid),
         .resp_ready(resp_ready),
         .resp_rdata(resp_rdata),
-        .resp_fault(resp_fault)
+        .resp_fault(resp_fault),
+        .host_req_valid(host_req_valid),
+        .host_req_ready(host_req_ready),
+        .host_req_write(host_req_write),
+        .host_req_addr(host_req_addr),
+        .host_req_wdata(host_req_wdata),
+        .host_req_wstrb(host_req_wstrb),
+        .host_resp_valid(host_resp_valid),
+        .host_resp_ready(host_resp_ready),
+        .host_resp_rdata(host_resp_rdata),
+        .host_resp_fault(host_resp_fault)
     );
 
     initial clk = 1'b0;
@@ -90,6 +110,38 @@ module slow_line_memory_tb;
         end
     endtask
 
+    task automatic host_access(
+        input logic write_request,
+        input logic [31:0] address,
+        input logic [31:0] write_data,
+        input logic [3:0] strobes,
+        input logic [31:0] expected_data,
+        input logic expected_fault
+    );
+        begin
+            @(negedge clk);
+            host_req_valid = 1'b1;
+            host_req_write = write_request;
+            host_req_addr = address;
+            host_req_wdata = write_data;
+            host_req_wstrb = strobes;
+            do @(posedge clk); while (!host_req_ready);
+            @(negedge clk);
+            host_req_valid = 1'b0;
+            wait (host_resp_valid);
+            tests++;
+            if (host_resp_fault != expected_fault ||
+                (!write_request && host_resp_rdata != expected_data)) begin
+                $error("Host memory portal response mismatch");
+                errors++;
+            end
+            host_resp_ready = 1'b1;
+            @(posedge clk);
+            @(negedge clk);
+            host_resp_ready = 1'b0;
+        end
+    endtask
+
     initial begin
         logic [LINE_BITS-1:0] expected_line;
         logic [LINE_BITS-1:0] replacement_line;
@@ -103,6 +155,12 @@ module slow_line_memory_tb;
         req_addr   = '0;
         req_wdata  = '0;
         resp_ready = 1'b0;
+        host_req_valid = 1'b0;
+        host_req_write = 1'b0;
+        host_req_addr = '0;
+        host_req_wdata = '0;
+        host_req_wstrb = '0;
+        host_resp_ready = 1'b0;
 
         for (int line = 0; line < (DEPTH_WORDS / LINE_WORDS); line++) begin
             for (int word = 0; word < LINE_WORDS; word++) begin
@@ -143,6 +201,12 @@ module slow_line_memory_tb;
         @(posedge clk);
         #1;
         resp_ready = 1'b0;
+
+        // The host portal writes individual words without disturbing other
+        // cache-line lanes and supports byte strobes plus readback.
+        host_access(1'b1, 32'h0000_0024, 32'hDEAD_BEEF, 4'b0101, '0, 1'b0);
+        host_access(1'b0, 32'h0000_0024, '0, '0, 32'h10AD_00EF, 1'b0);
+        host_access(1'b0, 32'h0001_0000, '0, '0, '0, 1'b1);
 
         tests++;
         if ((resp_valid !== 1'b0) || (req_ready !== 1'b1)) begin

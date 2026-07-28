@@ -12,6 +12,7 @@ module rv32_pipeline_axi_top #(
 ) (
     input  logic        clk_i,
     input  logic        rst_i,
+    input  logic        memory_rst_i,
 
     output logic [31:0] current_pc_o,
     output logic [31:0] instruction_o,
@@ -38,7 +39,29 @@ module rv32_pipeline_axi_top #(
     input  logic [31:0] M_AXI_RDATA,
     input  logic [1:0]  M_AXI_RRESP,
     input  logic        M_AXI_RVALID,
-    output logic        M_AXI_RREADY
+    output logic        M_AXI_RREADY,
+
+    input  logic        imem_host_req_valid,
+    output logic        imem_host_req_ready,
+    input  logic        imem_host_req_write,
+    input  logic [31:0] imem_host_req_addr,
+    input  logic [31:0] imem_host_req_wdata,
+    input  logic [3:0]  imem_host_req_wstrb,
+    output logic        imem_host_resp_valid,
+    input  logic        imem_host_resp_ready,
+    output logic [31:0] imem_host_resp_rdata,
+    output logic        imem_host_resp_fault,
+
+    input  logic        dmem_host_req_valid,
+    output logic        dmem_host_req_ready,
+    input  logic        dmem_host_req_write,
+    input  logic [31:0] dmem_host_req_addr,
+    input  logic [31:0] dmem_host_req_wdata,
+    input  logic [3:0]  dmem_host_req_wstrb,
+    output logic        dmem_host_resp_valid,
+    input  logic        dmem_host_resp_ready,
+    output logic [31:0] dmem_host_resp_rdata,
+    output logic        dmem_host_resp_fault
 );
     logic        mmio_req_valid;
     logic        mmio_req_ready;
@@ -65,6 +88,7 @@ module rv32_pipeline_axi_top #(
     ) u_core (
         .clk_i,
         .rst_i,
+        .memory_rst_i,
         .current_pc_o,
         .instruction_o,
         .halted_o,
@@ -80,7 +104,27 @@ module rv32_pipeline_axi_top #(
         .mmio_resp_valid,
         .mmio_resp_ready,
         .mmio_resp_rdata,
-        .mmio_resp_fault
+        .mmio_resp_fault,
+        .imem_host_req_valid,
+        .imem_host_req_ready,
+        .imem_host_req_write,
+        .imem_host_req_addr,
+        .imem_host_req_wdata,
+        .imem_host_req_wstrb,
+        .imem_host_resp_valid,
+        .imem_host_resp_ready,
+        .imem_host_resp_rdata,
+        .imem_host_resp_fault,
+        .dmem_host_req_valid,
+        .dmem_host_req_ready,
+        .dmem_host_req_write,
+        .dmem_host_req_addr,
+        .dmem_host_req_wdata,
+        .dmem_host_req_wstrb,
+        .dmem_host_resp_valid,
+        .dmem_host_resp_ready,
+        .dmem_host_resp_rdata,
+        .dmem_host_resp_fault
     );
 
     rv32_axi_lite_master u_axi_master (

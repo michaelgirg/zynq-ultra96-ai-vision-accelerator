@@ -71,6 +71,7 @@ WB, including normal load-use forwarding behavior.
 | `0x20` | `RESULT` | controller result (`0x600D` on success) |
 | `0x24` | `ERROR_CODE` | controller failure code |
 | `0x28` | `MAILBOX_ID` | read-only `0x5A424D42` (`ZBMB`) |
+| `0x2C` | `BOOT_CONTROL` | bit 0 releases RV32 reset after host memory loading |
 
 The host writes a descriptor and submits it. RV32 claims the pending job,
 which freezes descriptor writes, then writes result/error and completes or

@@ -37,6 +37,7 @@ module core_pipeline #(
 ) (
     input logic clk_i,
     input logic rst_i,
+    input logic memory_rst_i,
 
     output logic [31:0] current_pc_o,
     output logic [31:0] instruction_o,
@@ -55,7 +56,29 @@ module core_pipeline #(
     input  logic        mmio_resp_valid,
     output logic        mmio_resp_ready,
     input  logic [31:0] mmio_resp_rdata,
-    input  logic        mmio_resp_fault
+    input  logic        mmio_resp_fault,
+
+    input  logic        imem_host_req_valid,
+    output logic        imem_host_req_ready,
+    input  logic        imem_host_req_write,
+    input  logic [31:0] imem_host_req_addr,
+    input  logic [31:0] imem_host_req_wdata,
+    input  logic [3:0]  imem_host_req_wstrb,
+    output logic        imem_host_resp_valid,
+    input  logic        imem_host_resp_ready,
+    output logic [31:0] imem_host_resp_rdata,
+    output logic        imem_host_resp_fault,
+
+    input  logic        dmem_host_req_valid,
+    output logic        dmem_host_req_ready,
+    input  logic        dmem_host_req_write,
+    input  logic [31:0] dmem_host_req_addr,
+    input  logic [31:0] dmem_host_req_wdata,
+    input  logic [3:0]  dmem_host_req_wstrb,
+    output logic        dmem_host_resp_valid,
+    input  logic        dmem_host_resp_ready,
+    output logic [31:0] dmem_host_resp_rdata,
+    output logic        dmem_host_resp_fault
 );
 
     localparam int CACHE_LINE_BITS = 32 * CACHE_LINE_WORDS;
@@ -283,7 +306,7 @@ module core_pipeline #(
         .HEX_FILE   (IMEM_HEX)
     ) u_imem (
         .clk       (clk_i),
-        .rst       (rst_i),
+        .rst       (memory_rst_i),
         .req_valid (imem_req_valid),
         .req_ready (imem_req_ready),
         .req_write (1'b0),
@@ -292,7 +315,17 @@ module core_pipeline #(
         .resp_valid(imem_resp_valid),
         .resp_ready(imem_resp_ready),
         .resp_rdata(imem_resp_rdata),
-        .resp_fault(imem_resp_fault)
+        .resp_fault(imem_resp_fault),
+        .host_req_valid (imem_host_req_valid),
+        .host_req_ready (imem_host_req_ready),
+        .host_req_write (imem_host_req_write),
+        .host_req_addr  (imem_host_req_addr),
+        .host_req_wdata (imem_host_req_wdata),
+        .host_req_wstrb (imem_host_req_wstrb),
+        .host_resp_valid(imem_host_resp_valid),
+        .host_resp_ready(imem_host_resp_ready),
+        .host_resp_rdata(imem_host_resp_rdata),
+        .host_resp_fault(imem_host_resp_fault)
     );
 
     always_comb begin
@@ -693,7 +726,7 @@ module core_pipeline #(
         .HEX_FILE   (DMEM_HEX)
     ) u_dmem (
         .clk       (clk_i),
-        .rst       (rst_i),
+        .rst       (memory_rst_i),
         .req_valid (dmem_req_valid),
         .req_ready (dmem_req_ready),
         .req_write (dmem_req_write),
@@ -702,7 +735,17 @@ module core_pipeline #(
         .resp_valid(dmem_resp_valid),
         .resp_ready(dmem_resp_ready),
         .resp_rdata(dmem_resp_rdata),
-        .resp_fault(dmem_resp_fault)
+        .resp_fault(dmem_resp_fault),
+        .host_req_valid (dmem_host_req_valid),
+        .host_req_ready (dmem_host_req_ready),
+        .host_req_write (dmem_host_req_write),
+        .host_req_addr  (dmem_host_req_addr),
+        .host_req_wdata (dmem_host_req_wdata),
+        .host_req_wstrb (dmem_host_req_wstrb),
+        .host_resp_valid(dmem_host_resp_valid),
+        .host_resp_ready(dmem_host_resp_ready),
+        .host_resp_rdata(dmem_host_resp_rdata),
+        .host_resp_fault(dmem_host_resp_fault)
     );
 
     assign memory_read_data = router_resp_rdata;
