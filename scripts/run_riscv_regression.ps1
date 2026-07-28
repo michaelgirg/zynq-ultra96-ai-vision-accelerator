@@ -10,7 +10,8 @@ $vsim = Get-Command vsim -ErrorAction Stop
 $runs = @(
     "run_unit.do",
     "run_pipeline_unit.do",
-    "run_pipeline_core.do"
+    "run_pipeline_core.do",
+    "run_soc_unit.do"
 )
 
 Push-Location $simDir

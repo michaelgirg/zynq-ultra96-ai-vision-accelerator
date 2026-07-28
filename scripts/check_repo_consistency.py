@@ -15,6 +15,8 @@ HASH_MANIFEST = ROOT / "generated" / "test_vectors" / "manifest.json"
 VECTOR_MANIFEST = ROOT / "generated" / "test_vectors" / "vector_conv4_manifest.json"
 REGISTER_DOC = ROOT / "docs" / "register_map.md"
 REGISTER_RTL = ROOT / "rtl" / "axis_preprocess_vector_axi_lite.sv"
+SOC_MAP = ROOT / "config" / "soc_address_map.json"
+SOC_MAP_RTL = ROOT / "rtl" / "riscv" / "soc" / "soc_address_map_pkg.sv"
 PIXELS_PER_FRAME = 28 * 28
 
 
@@ -97,12 +99,47 @@ def check_register_map(errors: list[str]) -> None:
             errors.append(f"register map offset mismatch for {name}: doc={address}, rtl=0x{rtl_offsets[name]:02X}")
 
 
+def check_soc_address_map(errors: list[str]) -> None:
+    regions = json.loads(SOC_MAP.read_text(encoding="utf-8"))["regions"]
+    rtl = SOC_MAP_RTL.read_text(encoding="utf-8")
+    rtl_values = {
+        name: int(value.replace("_", ""), 16)
+        for name, value in re.findall(
+            r"localparam\s+logic\s+\[31:0\]\s+([A-Z0-9_]+)\s*=\s*32'h([0-9a-fA-F_]+)",
+            rtl,
+        )
+    }
+
+    occupied: list[tuple[int, int, str]] = []
+    for name, region in regions.items():
+        base = int(region["base"], 16)
+        size = int(region["size"], 16)
+        if size <= 0 or size & (size - 1):
+            errors.append(f"SoC region {name} size must be a positive power of two")
+        for suffix, expected in (("BASE", base), ("SIZE", size)):
+            constant = f"{name}_{suffix}"
+            if constant not in rtl_values:
+                errors.append(f"SoC map RTL is missing {constant}")
+            elif rtl_values[constant] != expected:
+                errors.append(
+                    f"SoC map mismatch for {constant}: "
+                    f"json=0x{expected:08X}, rtl=0x{rtl_values[constant]:08X}"
+                )
+        occupied.append((base, base + size, name))
+
+    occupied.sort()
+    for (_, previous_end, previous_name), (base, _, name) in zip(occupied, occupied[1:]):
+        if base < previous_end:
+            errors.append(f"SoC regions overlap: {previous_name} and {name}")
+
+
 def main() -> None:
     errors: list[str] = []
     check_text_hygiene(errors)
     check_hashed_vectors(errors)
     check_vector_manifest(errors)
     check_register_map(errors)
+    check_soc_address_map(errors)
     if errors:
         raise SystemExit("Repository consistency failed:\n- " + "\n- ".join(errors))
     print("Repository consistency checks passed")

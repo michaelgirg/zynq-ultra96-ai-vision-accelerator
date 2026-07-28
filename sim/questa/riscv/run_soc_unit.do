@@ -1,0 +1,20 @@
+onerror {quit -code 1}
+
+set work_lib riscv_soc_unit_work
+
+if {[file isdirectory $work_lib]} {
+    catch {vdel -lib $work_lib -all}
+}
+vlib $work_lib
+
+vlog -work $work_lib -sv ../../../rtl/riscv/soc/soc_address_map_pkg.sv
+vlog -work $work_lib -sv ../../../rtl/riscv/soc/rv32_mmio_router.sv
+vlog -work $work_lib -sv ../../../tb/riscv/unit/soc/rv32_mmio_router_tb.sv
+
+vsim -c $work_lib.rv32_mmio_router_tb
+onfinish stop
+run -all
+quit -sim
+
+echo "RISC-V SoC unit tests completed"
+quit -code 0
