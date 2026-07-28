@@ -37,11 +37,20 @@ foreach test {core_pipeline_tb core_pipeline_m_tb core_pipeline_cache_tb core_pi
 
 if {[file exists "../../../software/riscv/build/controller_imem.mem"] &&
     [file exists "../../../software/riscv/build/controller_dmem.mem"]} {
-    echo "Running GCC-built RV32 controller firmware"
-    vsim -c $work_lib.rv32_dma_control_tb +COMPILED_FIRMWARE
-    onfinish stop
-    run -all
-    quit -sim
+    foreach scenario {
+        FIRMWARE_SUCCESS
+        BAD_JOB
+        BAD_IP_ID
+        DMA_MM2S_ERROR
+        DMA_S2MM_ERROR
+        ACCEL_ERROR
+    } {
+        echo "Running GCC-built RV32 controller firmware: $scenario"
+        vsim -c $work_lib.rv32_dma_control_tb +COMPILED_FIRMWARE +$scenario
+        onfinish stop
+        run -all
+        quit -sim
+    }
 } else {
     echo "Skipping compiled firmware test; run scripts/build_riscv_firmware.ps1 first"
 }

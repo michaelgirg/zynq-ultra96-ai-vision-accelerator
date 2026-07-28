@@ -35,3 +35,5 @@ before generating memory files. This prevents linker metadata from shifting
 PC-relative startup code away from the processor reset vector. The compiled
 firmware control sequence and the hand-authored directed sequence are both
 covered by the local Questa regression when the firmware images are present.
+The compiled-image suite covers successful completion plus bad descriptor,
+accelerator-ID, MM2S, S2MM, and accelerator-diagnostic failures.

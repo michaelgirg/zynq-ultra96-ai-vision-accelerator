@@ -70,7 +70,7 @@ model; see [`docs/rv32_soc_integration.md`](docs/rv32_soc_integration.md).
   UVM errors/fatals, assertion failures, or simulator errors.
 - RV32 SoC: processor preservation, MMIO/AXI, mailbox, host boot, and both
   directed and GCC-built firmware DMA-control tests pass against the real
-  accelerator RTL.
+  accelerator RTL, including five injected firmware error paths.
 - Targeted functional coverage: 100%.
 
 Run the local checks from the repository root:

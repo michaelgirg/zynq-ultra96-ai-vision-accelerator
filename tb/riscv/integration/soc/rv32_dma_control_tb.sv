@@ -85,6 +85,12 @@ module rv32_dma_control_tb;
     logic [31:0] mailbox_result;
     logic [31:0] mailbox_error_code;
     bit          compiled_firmware;
+    bit          inject_bad_job;
+    bit          inject_bad_ip_id;
+    bit          inject_mm2s_error;
+    bit          inject_s2mm_error;
+    bit          inject_accelerator_error;
+    integer      expected_firmware_error;
     integer      cycles;
     integer      errors;
 
@@ -144,7 +150,11 @@ module rv32_dma_control_tb;
     assign M_AXI_BRESP   = accel_write_select ? accel_bresp   : local_bresp;
     assign M_AXI_BVALID  = accel_write_select ? accel_bvalid  : local_bvalid;
     assign M_AXI_ARREADY = accel_read_select  ? accel_arready : local_arready;
-    assign M_AXI_RDATA   = accel_read_select  ? accel_rdata   : local_rdata;
+    assign M_AXI_RDATA   = accel_read_select ?
+        ((inject_bad_ip_id && M_AXI_ARADDR[7:0] == 8'h70) ?
+            (accel_rdata ^ 32'h1) :
+         (inject_accelerator_error && M_AXI_ARADDR[7:0] == 8'h8C) ?
+            32'h1 : accel_rdata) : local_rdata;
     assign M_AXI_RRESP   = accel_read_select  ? accel_rresp   : local_rresp;
     assign M_AXI_RVALID  = accel_read_select  ? accel_rvalid  : local_rvalid;
 
@@ -271,11 +281,15 @@ module rv32_dma_control_tb;
             if ((address & 32'hFFFF_0000) == 32'hA001_0000) begin
                 case (offset)
                     16'h0000: local_read_data = mm2s_control;
-                    16'h0004: local_read_data = mm2s_active ? 32'h0 : 32'h2;
+                    16'h0004: local_read_data =
+                        (inject_mm2s_error && mm2s_length != 0) ?
+                        32'h10 : (mm2s_active ? 32'h0 : 32'h2);
                     16'h0018: local_read_data = mm2s_source_address;
                     16'h0028: local_read_data = mm2s_length;
                     16'h0030: local_read_data = s2mm_control;
-                    16'h0034: local_read_data = s2mm_active ? 32'h0 : 32'h2;
+                    16'h0034: local_read_data =
+                        (inject_s2mm_error && s2mm_length != 0) ?
+                        32'h10 : (s2mm_active ? 32'h0 : 32'h2);
                     16'h0048: local_read_data = s2mm_destination_address;
                     16'h0058: local_read_data = s2mm_length;
                     default: local_read_data = 32'b0;
@@ -330,7 +344,7 @@ module rv32_dma_control_tb;
             mailbox_status <= compiled_firmware ? 32'h1 : 32'h0;
             mailbox_input_address <= 32'h1000_0000;
             mailbox_output_address <= 32'h1000_1000;
-            mailbox_transfer_bytes <= 32'd16;
+            mailbox_transfer_bytes <= inject_bad_job ? 32'd0 : 32'd16;
             mailbox_mode <= 32'd0;
             mailbox_threshold <= 32'd100;
             mailbox_job_id <= 32'hCAFE_0001;
@@ -493,6 +507,17 @@ module rv32_dma_control_tb;
         errors = 0;
         cycles = 0;
         compiled_firmware = $test$plusargs("COMPILED_FIRMWARE");
+        inject_bad_job = $test$plusargs("BAD_JOB");
+        inject_bad_ip_id = $test$plusargs("BAD_IP_ID");
+        inject_mm2s_error = $test$plusargs("DMA_MM2S_ERROR");
+        inject_s2mm_error = $test$plusargs("DMA_S2MM_ERROR");
+        inject_accelerator_error = $test$plusargs("ACCEL_ERROR");
+        expected_firmware_error = 0;
+        if (inject_bad_job) expected_firmware_error = 2;
+        else if (inject_bad_ip_id) expected_firmware_error = 1;
+        else if (inject_mm2s_error) expected_firmware_error = 3;
+        else if (inject_s2mm_error) expected_firmware_error = 4;
+        else if (inject_accelerator_error) expected_firmware_error = 5;
 
         #1;
         if (compiled_firmware) begin
@@ -550,32 +575,49 @@ module rv32_dma_control_tb;
         end
 
         if (compiled_firmware) begin
-            if (mailbox_status != 32'h4)
-                fail("compiled firmware did not complete the mailbox job");
-            if (mailbox_result != 32'h0000_600D || mailbox_error_code != 0)
-                fail("compiled firmware reported an incorrect mailbox result");
+            if (expected_firmware_error == 0) begin
+                if (mailbox_status != 32'h4)
+                    fail("compiled firmware did not complete the mailbox job");
+                if (mailbox_result != 32'h0000_600D || mailbox_error_code != 0)
+                    fail("compiled firmware reported an incorrect mailbox result");
+            end
+            else begin
+                if (mailbox_status != 32'h8)
+                    fail("compiled firmware did not fail the injected-error job");
+                if (mailbox_result != 0 ||
+                    mailbox_error_code != expected_firmware_error)
+                    fail("compiled firmware reported an incorrect error code");
+            end
             if (halted)
                 fail("compiled controller unexpectedly halted after one job");
         end
         else if (!halted) begin
             fail("DMA control program did not halt");
         end
-        if (mm2s_source_address != 32'h1000_0000 || mm2s_length != 32'd16)
-            fail("MM2S programming mismatch");
-        if (s2mm_destination_address != 32'h1000_1000 || s2mm_length != 32'd16)
-            fail("S2MM programming mismatch");
-        if (mm2s_active || s2mm_active)
-            fail("DMA channels remained active after firmware completion");
-        if (s2mm_index != 3)
-            fail("S2MM did not capture all four processed pixels");
+        if (!compiled_firmware || expected_firmware_error == 0 ||
+            expected_firmware_error >= 3) begin
+            if (mm2s_source_address != 32'h1000_0000 || mm2s_length != 32'd16)
+                fail("MM2S programming mismatch");
+            if (s2mm_destination_address != 32'h1000_1000 || s2mm_length != 32'd16)
+                fail("S2MM programming mismatch");
+        end
+        if (!compiled_firmware || expected_firmware_error == 0) begin
+            if (mm2s_active || s2mm_active)
+                fail("DMA channels remained active after firmware completion");
+            if (s2mm_index != 3)
+                fail("S2MM did not capture all four processed pixels");
+        end
         if (!compiled_firmware && dut.u_core.u_regfile.regs[8] != 32'd1)
             fail("firmware did not observe one completed accelerator frame");
         if (!compiled_firmware && mailbox_completion != 32'h0000_600D)
             fail("firmware did not publish the completion mailbox value");
 
-        if (errors == 0 && compiled_firmware)
+        if (errors == 0 && compiled_firmware && expected_firmware_error == 0)
             $display("PASS: compiled RV32 firmware completed DMA job (%0d cycles, mailbox=%08h)",
                      cycles, mailbox_result);
+        else if (errors == 0 && compiled_firmware)
+            $display("PASS: compiled RV32 firmware reported injected error %0d (%0d cycles)",
+                     expected_firmware_error, cycles);
         else if (errors == 0)
             $display("PASS: RV32 DMA control flow (%0d cycles, mailbox=%08h)",
                      cycles, mailbox_completion);
