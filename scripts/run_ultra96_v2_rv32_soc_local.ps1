@@ -19,8 +19,28 @@ if ([System.IO.Path]::IsPathRooted($VivadoPath)) {
 elseif (-not (Get-Command $VivadoPath -ErrorAction SilentlyContinue)) {
     throw "Vivado command '$VivadoPath' is not on PATH; pass -VivadoPath with the full path to vivado.bat."
 }
+
+if (-not $BoardRepo) {
+    $vivadoSettingsRoot = Join-Path $env:APPDATA "Xilinx\Vivado"
+    if (Test-Path -LiteralPath $vivadoSettingsRoot) {
+        $settingsVersions = Get-ChildItem -LiteralPath $vivadoSettingsRoot -Directory |
+            Where-Object { $_.Name -match '^\d+\.\d+$' } |
+            Sort-Object Name -Descending
+        foreach ($settingsVersion in $settingsVersions) {
+            $candidate = Join-Path $settingsVersion.FullName (
+                "xhub\board_store\xilinx_board_store\XilinxBoardStore\Vivado\" +
+                $settingsVersion.Name + "\boards"
+            )
+            if (Test-Path -LiteralPath (Join-Path $candidate "Avnet\ultra96v2")) {
+                $BoardRepo = $candidate
+                break
+            }
+        }
+    }
+}
 if ($BoardRepo) {
     $env:ULTRA96_BOARD_REPO = (Resolve-Path -LiteralPath $BoardRepo).Path
+    Write-Host "Using board repository: $env:ULTRA96_BOARD_REPO"
 }
 
 function Invoke-VivadoStage {

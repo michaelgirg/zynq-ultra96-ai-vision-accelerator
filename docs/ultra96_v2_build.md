@@ -39,6 +39,8 @@ powershell -ExecutionPolicy Bypass -File .\scripts\run_ultra96_v2_rv32_soc_local
 
 If Vivado is not on `PATH`, append
 `-VivadoPath "<Vivado-install>\2025.2\bin\vivado.bat"`. If the board files are
-outside Vivado, append `-BoardRepo "<board-store>"`.
+installed through the Windows Vivado Store, the wrapper discovers that board
+repository automatically. For any other location, append
+`-BoardRepo "<board-store>"`.
 The new generated project is `vivado/u96v2_rv32_soc_vivado`; the bitstream and
 bitstream-inclusive XSA are generated only after implementation succeeds.
