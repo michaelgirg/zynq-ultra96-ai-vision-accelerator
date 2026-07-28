@@ -261,4 +261,42 @@ module slow_line_memory #(
         end
     end
 
+`ifndef SYNTHESIS
+    property p_core_response_stable;
+        @(posedge clk) disable iff (rst)
+            resp_valid && !resp_ready |=>
+                resp_valid && $stable({resp_rdata, resp_fault});
+    endproperty
+
+    property p_host_response_stable;
+        @(posedge clk) disable iff (rst)
+            host_resp_valid && !host_resp_ready |=>
+                host_resp_valid && $stable({host_resp_rdata, host_resp_fault});
+    endproperty
+
+    property p_single_client_accept;
+        @(posedge clk) disable iff (rst)
+            !(req_valid && req_ready && host_req_valid && host_req_ready);
+    endproperty
+
+    property p_single_response;
+        @(posedge clk) disable iff (rst)
+            !(resp_valid && host_resp_valid);
+    endproperty
+
+    assert property (p_core_response_stable);
+    assert property (p_host_response_stable);
+    assert property (p_single_client_accept);
+    assert property (p_single_response);
+
+    cover property (@(posedge clk) disable iff (rst)
+        req_valid && req_ready && !req_write && !request_is_fault);
+    cover property (@(posedge clk) disable iff (rst)
+        req_valid && req_ready && req_write && !request_is_fault);
+    cover property (@(posedge clk) disable iff (rst)
+        req_valid && req_ready && request_is_fault);
+    cover property (@(posedge clk) disable iff (rst)
+        host_req_valid && host_req_ready && host_req_write);
+`endif
+
 endmodule
