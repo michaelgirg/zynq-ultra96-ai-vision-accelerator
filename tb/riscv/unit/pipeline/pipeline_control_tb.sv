@@ -107,7 +107,7 @@ module pipeline_control_tb;
 
         clear_inputs();
         if_stall = 1'b1;
-        check("I-cache stall",                    1'b0, 32'h0000_0000,   1'b1,  1'b1,  1'b0,  1'b0,  1'b0,  1'b0,  1'b0);
+        check("I-cache stall",                    1'b0, 32'h0000_0000,   1'b1,  1'b0,  1'b1,  1'b0,  1'b0,  1'b0,  1'b0);
 
         clear_inputs();
         ex_redirect = 1'b1;

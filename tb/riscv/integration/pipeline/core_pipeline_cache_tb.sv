@@ -37,7 +37,17 @@ module core_pipeline_cache_tb;
         .halted_o              (halted),
         .illegal_instruction_o (illegal_instruction),
         .instruction_fault_o   (instruction_fault),
-        .data_fault_o          (data_fault)
+        .data_fault_o          (data_fault),
+        .mmio_req_valid        (),
+        .mmio_req_ready        (1'b0),
+        .mmio_req_write        (),
+        .mmio_req_addr         (),
+        .mmio_req_wdata        (),
+        .mmio_req_wstrb        (),
+        .mmio_resp_valid       (1'b0),
+        .mmio_resp_ready       (),
+        .mmio_resp_rdata       (32'b0),
+        .mmio_resp_fault       (1'b0)
     );
 
     initial clk = 1'b0;

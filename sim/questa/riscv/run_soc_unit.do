@@ -3,7 +3,11 @@ onerror {quit -code 1}
 set work_lib riscv_soc_unit_work
 
 if {[file isdirectory $work_lib]} {
-    catch {vdel -lib $work_lib -all}
+    if {[file exists "$work_lib/_info"]} {
+        catch {vdel -lib $work_lib -all}
+    } else {
+        file delete -force $work_lib
+    }
 }
 vlib $work_lib
 

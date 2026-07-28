@@ -118,12 +118,12 @@ module pipeline_control (
       stall_id_ex  = 1'b1;
     end
     else if (if_stall) begin
-      // An instruction miss is younger than every instruction already in the
-      // pipeline. Freeze only PC and IF/ID so older work can keep draining.
-      // Redirects are intentionally above this case so a taken branch updates
-      // PC even while an earlier wrong-path refill is still finishing.
+      // Hold the miss address in PC, but let the instruction already in IF/ID
+      // advance exactly once and replace its old slot with a bubble. Holding
+      // IF/ID here would decode that same instruction on every miss cycle,
+      // duplicating stores and multi-cycle operations.
       pc_stall    = 1'b1;
-      stall_if_id = 1'b1;
+      flush_if_id = 1'b1;
     end
   end
 endmodule

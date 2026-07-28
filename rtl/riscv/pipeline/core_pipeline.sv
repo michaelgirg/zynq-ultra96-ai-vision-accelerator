@@ -43,7 +43,19 @@ module core_pipeline #(
     output logic        halted_o,
     output logic        illegal_instruction_o,
     output logic        instruction_fault_o,
-    output logic        data_fault_o
+    output logic        data_fault_o,
+
+    output logic        mmio_req_valid,
+    input  logic        mmio_req_ready,
+    output logic        mmio_req_write,
+    output logic [31:0] mmio_req_addr,
+    output logic [31:0] mmio_req_wdata,
+    output logic [3:0]  mmio_req_wstrb,
+
+    input  logic        mmio_resp_valid,
+    output logic        mmio_resp_ready,
+    input  logic [31:0] mmio_resp_rdata,
+    input  logic        mmio_resp_fault
 );
 
     localparam int CACHE_LINE_BITS = 32 * CACHE_LINE_WORDS;
@@ -152,8 +164,19 @@ module core_pipeline #(
     logic           data_response_fire;
     logic           mem_response_consumed;
 
+    logic                         router_req_ready;
+    logic                         router_resp_valid;
+    logic [31:0]                  router_resp_rdata;
+    logic                         router_resp_fault;
+
+    logic                         dcache_req_valid;
     logic                         dcache_req_ready;
+    logic                         dcache_req_write;
+    logic [31:0]                  dcache_req_addr;
+    logic [31:0]                  dcache_req_wdata;
+    logic [2:0]                   dcache_req_funct3;
     logic                         dcache_resp_valid;
+    logic                         dcache_resp_ready;
     logic [31:0]                  dcache_resp_rdata;
     logic                         dcache_resp_hit;
     logic                         dcache_resp_miss;
@@ -275,8 +298,9 @@ module core_pipeline #(
     always_comb begin
         if_id_d = IF_ID_BUBBLE;
 
-        // Only a completed hit or fault is allowed to enter Decode. A miss
-        // leaves a bubble here while pipeline_control holds the old IF/ID.
+        // Only a completed hit or fault is allowed to enter Decode. On a miss,
+        // pipeline_control holds the PC while the old IF/ID entry advances
+        // once, then clears IF/ID so that instruction cannot decode again.
         if_id_d.valid = icache_resp_valid && !core_stop;
         if_id_d.pc = pc;
         if_id_d.instruction = fetched_instruction;
@@ -585,7 +609,7 @@ module core_pipeline #(
     // Keep the memory instruction in EX/MEM through the response edge. The
     // following cycle, its result is in MEM/WB for normal forwarding and the
     // held dependent instruction can safely advance from EX.
-    assign data_response_fire = dcache_resp_valid && !mem_response_consumed;
+    assign data_response_fire = router_resp_valid && !mem_response_consumed;
     assign mem_stall = data_request && !mem_response_consumed;
 
     always_ff @(posedge clk_i) begin
@@ -597,6 +621,41 @@ module core_pipeline #(
             mem_response_consumed <= 1'b0;
     end
 
+    rv32_mmio_router u_data_router (
+        .clk                (clk_i),
+        .rst                (rst_i),
+        .cpu_req_valid      (data_request && !mem_response_consumed),
+        .cpu_req_ready      (router_req_ready),
+        .cpu_req_write      (ex_mem_q.mem_write),
+        .cpu_req_addr       (ex_mem_q.alu_result),
+        .cpu_req_wdata      (ex_mem_q.store_data),
+        .cpu_req_funct3     (memory_funct3),
+        .cpu_resp_valid     (router_resp_valid),
+        .cpu_resp_ready     (!mem_response_consumed),
+        .cpu_resp_rdata     (router_resp_rdata),
+        .cpu_resp_fault     (router_resp_fault),
+        .local_req_valid    (dcache_req_valid),
+        .local_req_ready    (dcache_req_ready),
+        .local_req_write    (dcache_req_write),
+        .local_req_addr     (dcache_req_addr),
+        .local_req_wdata    (dcache_req_wdata),
+        .local_req_funct3   (dcache_req_funct3),
+        .local_resp_valid   (dcache_resp_valid),
+        .local_resp_ready   (dcache_resp_ready),
+        .local_resp_rdata   (dcache_resp_rdata),
+        .local_resp_fault   (dcache_resp_fault),
+        .mmio_req_valid     (mmio_req_valid),
+        .mmio_req_ready     (mmio_req_ready),
+        .mmio_req_write     (mmio_req_write),
+        .mmio_req_addr      (mmio_req_addr),
+        .mmio_req_wdata     (mmio_req_wdata),
+        .mmio_req_wstrb     (mmio_req_wstrb),
+        .mmio_resp_valid    (mmio_resp_valid),
+        .mmio_resp_ready    (mmio_resp_ready),
+        .mmio_resp_rdata    (mmio_resp_rdata),
+        .mmio_resp_fault    (mmio_resp_fault)
+    );
+
     dcache #(
         .NUM_SETS  (DCACHE_NUM_SETS),
         .NUM_WAYS  (DCACHE_NUM_WAYS),
@@ -604,13 +663,13 @@ module core_pipeline #(
     ) u_dcache (
         .clk            (clk_i),
         .rst            (rst_i),
-        .cpu_req_valid  (data_request && !mem_response_consumed),
-        .cpu_req_write  (ex_mem_q.mem_write),
-        .cpu_req_addr   (ex_mem_q.alu_result),
-        .cpu_req_wdata  (ex_mem_q.store_data),
-        .cpu_req_funct3 (memory_funct3),
+        .cpu_req_valid  (dcache_req_valid),
+        .cpu_req_write  (dcache_req_write),
+        .cpu_req_addr   (dcache_req_addr),
+        .cpu_req_wdata  (dcache_req_wdata),
+        .cpu_req_funct3 (dcache_req_funct3),
         .cpu_req_ready  (dcache_req_ready),
-        .cpu_resp_ready (!mem_response_consumed),
+        .cpu_resp_ready (dcache_resp_ready),
         .cpu_resp_valid (dcache_resp_valid),
         .cpu_resp_rdata (dcache_resp_rdata),
         .cpu_resp_hit   (dcache_resp_hit),
@@ -646,8 +705,8 @@ module core_pipeline #(
         .resp_fault(dmem_resp_fault)
     );
 
-    assign memory_read_data = dcache_resp_rdata;
-    assign data_access_fault = dcache_resp_valid && dcache_resp_fault;
+    assign memory_read_data = router_resp_rdata;
+    assign data_access_fault = router_resp_valid && router_resp_fault;
 
     always_comb begin
         mem_wb_d = MEM_WB_BUBBLE;

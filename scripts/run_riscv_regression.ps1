@@ -18,9 +18,14 @@ Push-Location $simDir
 try {
     foreach ($run in $runs) {
         Write-Host "Running RV32IM regression: $run"
-        & $vsim.Source -c -do $run
-        if ($LASTEXITCODE -ne 0) {
-            throw "RV32IM regression failed in $run (exit $LASTEXITCODE)."
+        $output = & $vsim.Source -c -do $run 2>&1
+        $exitCode = $LASTEXITCODE
+        $output | ForEach-Object { Write-Host $_ }
+        $transcript = $output -join "`n"
+        if ($exitCode -ne 0 -or
+            $transcript -match '(?m)^#?\s*\*\*\s+(Error|Fatal):' -or
+            $transcript -match '(?m)\bFAIL:') {
+            throw "RV32IM regression failed in $run (exit $exitCode)."
         }
     }
 }
