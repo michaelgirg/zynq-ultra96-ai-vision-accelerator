@@ -13,11 +13,17 @@ if {![info exists bd_name]} {
     set bd_name "u96v2bd"
 }
 set ip_repo_dir [file normalize [file join $repo_root "vivado/ip_repo_ultra96_production_v2"]]
+set rv32_ip_repo_dir [file normalize [file join $repo_root "vivado/ip_repo_rv32_soc"]]
+if {![info exists enable_rv32_soc]} {
+    set enable_rv32_soc 0
+}
 
 if {![info exists part_name]} {
     set part_name "xczu3eg-sbva484-1-e"
 }
 set preproc_vlnv "mgirgis1.local:u96_ai_vision:axis_preprocess_vector_cdc:2.0"
+set rv32_vlnv "mgirgis1.local:u96_ai_vision:rv32_pipeline_axi_subsystem:1.0"
+set mailbox_vlnv "mgirgis1.local:u96_ai_vision:rv32_job_mailbox:1.0"
 if {![info exists ultra96_board_variant]} {
     set ultra96_board_variant "v1"
 }
@@ -76,6 +82,12 @@ if {![file exists [file join $ip_repo_dir "axis_preprocess_vector_cdc/component.
     puts "Production-v2 packaged IP was not found. Packaging it now."
     source [file join $script_dir "package_axis_preprocess_vector_cdc_ip_ultra96.tcl"]
 }
+if {$enable_rv32_soc &&
+    (![file exists [file join $rv32_ip_repo_dir "rv32_pipeline_axi_subsystem/component.xml"]] ||
+     ![file exists [file join $rv32_ip_repo_dir "rv32_job_mailbox/component.xml"]])} {
+    puts "RV32 control IP was not found. Packaging it now."
+    source [file join $script_dir "package_rv32_control_soc_ip.tcl"]
+}
 
 # Optional machine-specific board repository. System-installed board files need
 # no override; on a custom installation export ULTRA96_BOARD_REPO first.
@@ -93,11 +105,18 @@ puts "Using board part: $board_part"
 
 create_project $project_name $project_dir -part $part_name
 set_property board_part $board_part [current_project]
-set_property ip_repo_paths [list $ip_repo_dir] [current_project]
+set project_ip_repos [list $ip_repo_dir]
+if {$enable_rv32_soc} { lappend project_ip_repos $rv32_ip_repo_dir }
+set_property ip_repo_paths $project_ip_repos [current_project]
 update_ip_catalog
 
 if {[llength [get_ipdefs -all $preproc_vlnv]] == 0} {
     error "Could not find packaged IP VLNV: $preproc_vlnv"
+}
+if {$enable_rv32_soc &&
+    ([llength [get_ipdefs -all $rv32_vlnv]] == 0 ||
+     [llength [get_ipdefs -all $mailbox_vlnv]] == 0)} {
+    error "Could not find the packaged RV32 subsystem and mailbox IP."
 }
 
 create_bd_design $bd_name
@@ -141,8 +160,20 @@ set_property -dict [list \
 
 create_bd_cell -type ip -vlnv $preproc_vlnv pre
 
+if {$enable_rv32_soc} {
+    create_bd_cell -type ip -vlnv $rv32_vlnv rv32
+    create_bd_cell -type ip -vlnv $mailbox_vlnv mailbox
+    create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:* rv32_reset_inv
+    set_property -dict [list CONFIG.C_OPERATION {not} CONFIG.C_SIZE {1}] \
+        [get_bd_cells rv32_reset_inv]
+}
+
 create_bd_cell -type ip -vlnv xilinx.com:ip:smartconnect:* sc_ctrl
-set_property -dict [list CONFIG.NUM_SI {1} CONFIG.NUM_MI {2}] [get_bd_cells sc_ctrl]
+if {$enable_rv32_soc} {
+    set_property -dict [list CONFIG.NUM_SI {2} CONFIG.NUM_MI {5}] [get_bd_cells sc_ctrl]
+} else {
+    set_property -dict [list CONFIG.NUM_SI {1} CONFIG.NUM_MI {2}] [get_bd_cells sc_ctrl]
+}
 
 create_bd_cell -type ip -vlnv xilinx.com:ip:smartconnect:* sc_hp
 set_property -dict [list CONFIG.NUM_SI {2} CONFIG.NUM_MI {1}] [get_bd_cells sc_hp]
@@ -160,12 +191,22 @@ connect_bd_net [get_bd_pins ps/pl_clk0] [get_bd_pins rst_ctrl/slowest_sync_clk]
 connect_bd_net [get_bd_pins ps/pl_clk0] [get_bd_pins sc_ctrl/aclk]
 connect_bd_net [get_bd_pins ps/pl_clk0] [get_bd_pins dma/s_axi_lite_aclk]
 connect_bd_net [get_bd_pins ps/pl_clk0] [get_bd_pins pre/S_AXI_ACLK]
+if {$enable_rv32_soc} {
+    connect_bd_net [get_bd_pins ps/pl_clk0] [get_bd_pins rv32/clk_i]
+    connect_bd_net [get_bd_pins ps/pl_clk0] [get_bd_pins mailbox/S_AXI_ACLK]
+}
 
 connect_bd_net [get_bd_pins ps/pl_resetn0] [get_bd_pins rst_ctrl/ext_reset_in]
 connect_bd_net [get_bd_pins locked/dout] [get_bd_pins rst_ctrl/dcm_locked]
 connect_bd_net [get_bd_pins rst_ctrl/peripheral_aresetn] [get_bd_pins sc_ctrl/aresetn]
 connect_bd_net [get_bd_pins rst_ctrl/peripheral_aresetn] [get_bd_pins dma/axi_resetn]
 connect_bd_net [get_bd_pins rst_ctrl/peripheral_aresetn] [get_bd_pins pre/S_AXI_ARESETN]
+if {$enable_rv32_soc} {
+    connect_bd_net [get_bd_pins rst_ctrl/peripheral_reset] [get_bd_pins rv32/system_rst_i]
+    connect_bd_net [get_bd_pins rst_ctrl/peripheral_aresetn] [get_bd_pins mailbox/S_AXI_ARESETN]
+    connect_bd_net [get_bd_pins mailbox/rv32_resetn] [get_bd_pins rv32_reset_inv/Op1]
+    connect_bd_net [get_bd_pins rv32_reset_inv/Res] [get_bd_pins rv32/core_rst_i]
+}
 
 # Stream/data clock/reset domain: DMA memory and stream paths, HP port, and the
 # vector datapath half of the production CDC bridge.
@@ -184,6 +225,12 @@ connect_bd_net [get_bd_pins rst_axis/peripheral_aresetn] [get_bd_pins pre/AXIS_A
 connect_bd_intf_net [get_bd_intf_pins ps/M_AXI_HPM0_FPD] [get_bd_intf_pins sc_ctrl/S00_AXI]
 connect_bd_intf_net [get_bd_intf_pins sc_ctrl/M00_AXI] [get_bd_intf_pins dma/S_AXI_LITE]
 connect_bd_intf_net [get_bd_intf_pins sc_ctrl/M01_AXI] [get_bd_intf_pins pre/S_AXI]
+if {$enable_rv32_soc} {
+    connect_bd_intf_net [get_bd_intf_pins rv32/M_AXI] [get_bd_intf_pins sc_ctrl/S01_AXI]
+    connect_bd_intf_net [get_bd_intf_pins sc_ctrl/M02_AXI] [get_bd_intf_pins mailbox/S_AXI]
+    connect_bd_intf_net [get_bd_intf_pins sc_ctrl/M03_AXI] [get_bd_intf_pins rv32/S_AXI_IMEM]
+    connect_bd_intf_net [get_bd_intf_pins sc_ctrl/M04_AXI] [get_bd_intf_pins rv32/S_AXI_DMEM]
+}
 
 connect_bd_intf_net [get_bd_intf_pins dma/M_AXI_MM2S] [get_bd_intf_pins sc_hp/S00_AXI]
 connect_bd_intf_net [get_bd_intf_pins dma/M_AXI_S2MM] [get_bd_intf_pins sc_hp/S01_AXI]
@@ -201,6 +248,39 @@ foreach irq_index {3 4 5 6 7} {
 connect_bd_net [get_bd_pins irq_concat/dout] [get_bd_pins ps/pl_ps_irq0]
 
 assign_bd_address
+
+if {$enable_rv32_soc} {
+    # Both masters see accelerator/DMA/mailbox at the canonical firmware map.
+    # Host-only memory portals occupy their own 64 KiB windows.
+    set canonical_regions [dict create \
+        "dma/S_AXI_LITE"  [list 0xA0010000 64K] \
+        "pre/S_AXI"       [list 0xA0000000 4K] \
+        "mailbox/S_AXI"   [list 0xA0020000 4K] \
+        "rv32/S_AXI_IMEM" [list 0xA0030000 64K] \
+        "rv32/S_AXI_DMEM" [list 0xA0040000 64K]]
+    foreach interface_name [dict keys $canonical_regions] {
+        set slave_segments [get_bd_addr_segs -quiet -of_objects \
+            [get_bd_intf_pins $interface_name]]
+        set mappings_updated 0
+        foreach address_space [get_bd_addr_spaces] {
+            foreach mapped_segment [get_bd_addr_segs -quiet -of_objects $address_space] {
+                set target_segment [get_property TARGET_SEGMENT $mapped_segment]
+                foreach slave_segment $slave_segments {
+                    if {$target_segment eq $slave_segment} {
+                        lassign [dict get $canonical_regions $interface_name] region_offset region_range
+                        set_property offset $region_offset $mapped_segment
+                        set_property range $region_range $mapped_segment
+                        incr mappings_updated
+                        puts "Address [get_property NAME $address_space] -> $interface_name: $region_offset / $region_range"
+                    }
+                }
+            }
+        }
+        if {$mappings_updated == 0} {
+            error "No address-space mapping found for $interface_name"
+        }
+    }
+}
 
 foreach clock_pin {ps/pl_clk0 ps/pl_clk1 dma/s_axi_lite_aclk dma/m_axi_mm2s_aclk dma/m_axi_s2mm_aclk} {
     set clock_object [get_bd_pins $clock_pin]
@@ -232,6 +312,9 @@ puts "Board part: $board_part"
 puts "Control clock: 100 MHz PL0"
 puts "Stream clock: 150 MHz PL1"
 puts "Processor target: psu_cortexa53_0"
+if {$enable_rv32_soc} {
+    puts "RV32 controller: enabled at 100 MHz with ARM-loadable I/D memory portals"
+}
 puts ""
 
 close_project

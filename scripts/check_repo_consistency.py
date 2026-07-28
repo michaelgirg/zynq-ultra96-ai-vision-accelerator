@@ -21,6 +21,7 @@ REGISTER_RTL = ROOT / "rtl" / "axis_preprocess_vector_axi_lite.sv"
 SOC_MAP = ROOT / "config" / "soc_address_map.json"
 SOC_MAP_RTL = ROOT / "rtl" / "riscv" / "soc" / "soc_address_map_pkg.sv"
 SOC_MAP_HEADER = ROOT / "software" / "riscv" / "include" / "soc_address_map.h"
+SOC_MAP_TCL = ROOT / "vivado" / "scripts" / "create_ultra96_v1_production_v2_project.tcl"
 REGISTER_HEADER = ROOT / "software" / "riscv" / "include" / "vision_accel_regs.h"
 MAILBOX_RTL = ROOT / "rtl" / "riscv" / "soc" / "rv32_job_mailbox.sv"
 MAILBOX_HEADER = ROOT / "software" / "riscv" / "include" / "job_mailbox.h"
@@ -139,6 +140,21 @@ def check_soc_address_map(errors: list[str]) -> None:
             r"#define\s+SOC_([A-Z0-9_]+)\s+0x([0-9a-fA-F]+)u", header
         )
     }
+    tcl = SOC_MAP_TCL.read_text(encoding="utf-8")
+    tcl_regions = {
+        interface: (int(base, 16), int(size[:-1]) * 1024)
+        for interface, base, size in re.findall(
+            r'"([A-Za-z0-9_/]+)"\s+\[list\s+(0x[0-9a-fA-F]+)\s+([0-9]+K)\]',
+            tcl,
+        )
+    }
+    tcl_region_names = {
+        "VISION_ACCEL": "pre/S_AXI",
+        "AXI_DMA": "dma/S_AXI_LITE",
+        "MAILBOX": "mailbox/S_AXI",
+        "HOST_IMEM": "rv32/S_AXI_IMEM",
+        "HOST_DMEM": "rv32/S_AXI_DMEM",
+    }
 
     occupied: list[tuple[int, int, str]] = []
     for name, region in regions.items():
@@ -163,6 +179,17 @@ def check_soc_address_map(errors: list[str]) -> None:
                     f"json=0x{expected:08X}, header=0x{header_values[constant]:08X}"
                 )
         occupied.append((base, base + size, name))
+        if name in tcl_region_names:
+            interface = tcl_region_names[name]
+            if interface not in tcl_regions:
+                errors.append(f"Vivado map is missing {interface} for {name}")
+            elif tcl_regions[interface] != (base, size):
+                tcl_base, tcl_size = tcl_regions[interface]
+                errors.append(
+                    f"Vivado map mismatch for {name}: "
+                    f"json=0x{base:08X}/0x{size:X}, "
+                    f"tcl=0x{tcl_base:08X}/0x{tcl_size:X}"
+                )
 
     occupied.sort()
     for (_, previous_end, previous_name), (base, _, name) in zip(occupied, occupied[1:]):

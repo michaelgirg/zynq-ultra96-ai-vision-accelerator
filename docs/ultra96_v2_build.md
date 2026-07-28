@@ -21,3 +21,24 @@ vivado -mode batch -source vivado/scripts/run_ultra96_v2_production_v2_implement
 On Windows, `scripts/run_ultra96_v2_local_vivado.ps1` wraps these stages. Pass `-VivadoPath` when Vivado is not on `PATH`, and pass `-BoardRepo` when the board definition is stored outside Vivado's default board store.
 
 Generated Vivado projects, logs, reports, bitstreams, and XSA files are intentionally excluded from source control. Release binaries are distributed separately with the matching SHA256 manifest.
+
+## RV32 heterogeneous control SoC
+
+The RV32 flow is separate from the released accelerator-only checkpoint. It
+adds the five-stage controller as SmartConnect master 1, the hardware mailbox,
+and ARM-loadable 64 KiB instruction/data portals while preserving the 100 MHz
+control and 150 MHz stream domains.
+
+On Windows, run all RV32 packaging, project creation, synthesis,
+implementation, reports, bitstream, and XSA stages with:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\run_ultra96_v2_rv32_soc_local.ps1 `
+  -Stage all
+```
+
+If Vivado is not on `PATH`, append
+`-VivadoPath "<Vivado-install>\2025.2\bin\vivado.bat"`. If the board files are
+outside Vivado, append `-BoardRepo "<board-store>"`.
+The new generated project is `vivado/u96v2_rv32_soc_vivado`; the bitstream and
+bitstream-inclusive XSA are generated only after implementation succeeds.

@@ -26,6 +26,12 @@ The design supports four selectable modes:
 The production wrapper adds AXI4-Lite control, AXI DMA integration, diagnostics,
 interrupt status, register-version discovery, and a dual-clock CDC bridge.
 
+An optional heterogeneous SoC layer adds a five-stage RV32IM control processor
+with private caches, uncached AXI4-Lite accelerator/DMA access, an ARM/RV32 job
+mailbox, and host-loadable instruction/data memory. Questa tests execute the
+complete controller flow against the real accelerator RTL and a behavioral DMA
+model; see [`docs/rv32_soc_integration.md`](docs/rv32_soc_integration.md).
+
 ## Implementation snapshot
 
 | Item | Result |
@@ -87,5 +93,6 @@ generated/  compact deterministic models, headers, and test vectors
 pytorch/    quantization and golden-model utilities
 vivado/     packaging and Ultra96-V2 build Tcl
 scripts/    local regression and predictor utilities
+software/   ARM application plus freestanding RV32 controller firmware
 docs/       current design contract and historical engineering evidence
 ```

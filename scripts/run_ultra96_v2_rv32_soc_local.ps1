@@ -1,0 +1,48 @@
+param(
+    [string]$VivadoPath = "vivado",
+    [string]$BoardRepo = "",
+    [ValidateSet("package", "create", "synth", "impl", "all")]
+    [string]$Stage = "all"
+)
+
+$ErrorActionPreference = "Stop"
+$projectRoot = Split-Path -Parent $PSScriptRoot
+$scriptRoot = Join-Path $projectRoot "vivado\scripts"
+$logRoot = Join-Path $projectRoot "hardware\reports\ultra96_v2\rv32_soc\logs"
+New-Item -ItemType Directory -Force -Path $logRoot | Out-Null
+
+if ([System.IO.Path]::IsPathRooted($VivadoPath)) {
+    if (-not (Test-Path -LiteralPath $VivadoPath)) {
+        throw "Vivado was not found at $VivadoPath"
+    }
+}
+elseif (-not (Get-Command $VivadoPath -ErrorAction SilentlyContinue)) {
+    throw "Vivado command '$VivadoPath' is not on PATH; pass -VivadoPath with the full path to vivado.bat."
+}
+if ($BoardRepo) {
+    $env:ULTRA96_BOARD_REPO = (Resolve-Path -LiteralPath $BoardRepo).Path
+}
+
+function Invoke-VivadoStage {
+    param([string]$ScriptName)
+    $scriptPath = Join-Path $scriptRoot $ScriptName
+    $logPath = Join-Path $logRoot ($ScriptName -replace '\.tcl$', '.log')
+    & $VivadoPath -mode batch -source $scriptPath -log $logPath -journal ($logPath -replace '\.log$', '.jou')
+    if ($LASTEXITCODE -ne 0) {
+        throw "Vivado stage failed: $ScriptName (exit $LASTEXITCODE)"
+    }
+}
+
+switch ($Stage) {
+    "package" { Invoke-VivadoStage "package_rv32_control_soc_ip.tcl" }
+    "create"  { Invoke-VivadoStage "create_ultra96_v2_rv32_soc_project.tcl" }
+    "synth"   { Invoke-VivadoStage "run_ultra96_v2_rv32_soc_synth.tcl" }
+    "impl"    { Invoke-VivadoStage "run_ultra96_v2_rv32_soc_implementation.tcl" }
+    "all" {
+        Invoke-VivadoStage "check_ultra96_v2_board.tcl"
+        Invoke-VivadoStage "package_rv32_control_soc_ip.tcl"
+        Invoke-VivadoStage "create_ultra96_v2_rv32_soc_project.tcl"
+        Invoke-VivadoStage "run_ultra96_v2_rv32_soc_synth.tcl"
+        Invoke-VivadoStage "run_ultra96_v2_rv32_soc_implementation.tcl"
+    }
+}

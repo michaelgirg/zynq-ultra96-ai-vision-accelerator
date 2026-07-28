@@ -8,6 +8,8 @@
   and execution flow.
 - [Production-v2 register map](register_map.md): AXI4-Lite software contract.
 - [Ultra96-V2 build flow](ultra96_v2_build.md): portable Vivado flow.
+- [RV32IM heterogeneous control SoC](rv32_soc_integration.md): processor,
+  MMIO/AXI, DMA, mailbox, host boot, firmware, and verification contract.
 
 ## Historical engineering snapshots
 
