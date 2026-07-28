@@ -14,12 +14,15 @@ vlib $work_lib
 vlog -work $work_lib -sv ../../../rtl/riscv/soc/soc_address_map_pkg.sv
 vlog -work $work_lib -sv ../../../rtl/riscv/soc/rv32_mmio_router.sv
 vlog -work $work_lib -sv ../../../rtl/riscv/soc/rv32_axi_lite_master.sv
+vlog -work $work_lib -sv ../../../rtl/riscv/soc/rv32_job_mailbox.sv
 vlog -work $work_lib -sv ../../../tb/riscv/unit/soc/rv32_mmio_router_tb.sv
 vlog -work $work_lib -sv ../../../tb/riscv/unit/soc/rv32_axi_lite_master_tb.sv
+vlog -work $work_lib -sv ../../../tb/riscv/unit/soc/rv32_job_mailbox_tb.sv
 
 foreach testbench {
     rv32_mmio_router_tb
     rv32_axi_lite_master_tb
+    rv32_job_mailbox_tb
 } {
     vsim -c $work_lib.$testbench
     onfinish stop
