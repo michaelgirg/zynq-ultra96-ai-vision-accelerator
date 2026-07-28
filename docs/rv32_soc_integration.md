@@ -139,3 +139,32 @@ The generated bitstream and XSA hashes are recorded in
 `hardware/reports/ultra96_v2_rv32_soc_sha256.txt`. Physical-board execution is
 a separate runtime-validation milestone and is not part of this implementation
 checkpoint.
+
+## Reproducing the checkpoint
+
+Run portable repository and generated-file checks from the repository root:
+
+```powershell
+python .\scripts\check_repo_consistency.py
+powershell -ExecutionPolicy Bypass -File .\scripts\run_local_rtl_regression.ps1
+```
+
+When Questa is not on `PATH`, pass `-QuestaBin "<Questa-install>\win64"`.
+Build and simulate the GCC-produced controller image with:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\run_riscv_firmware_regression.ps1 `
+  -ToolchainBin "<Vitis-install>\gnu\riscv\nt\bin"
+```
+
+Recreate the Ultra96-V2 implementation with Vivado 2025.2 using:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\run_ultra96_v2_rv32_soc_local.ps1 `
+  -Stage all
+```
+
+The wrappers derive repository paths at runtime and accept tool locations as
+parameters. Generated projects, logs, reports, simulator databases, firmware
+build products, bitstreams, and XSA files are ignored; only portable source,
+evidence summaries, and basename-only SHA256 manifests are tracked.

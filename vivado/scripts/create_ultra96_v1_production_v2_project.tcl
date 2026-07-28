@@ -21,9 +21,10 @@ if {![info exists enable_rv32_soc]} {
 if {![info exists part_name]} {
     set part_name "xczu3eg-sbva484-1-e"
 }
-set preproc_vlnv "mgirgis1.local:u96_ai_vision:axis_preprocess_vector_cdc:2.0"
-set rv32_vlnv "mgirgis1.local:u96_ai_vision:rv32_pipeline_axi_subsystem:1.0"
-set mailbox_vlnv "mgirgis1.local:u96_ai_vision:rv32_job_mailbox:1.0"
+set ip_vendor_name "user.org"
+set preproc_vlnv "${ip_vendor_name}:u96_ai_vision:axis_preprocess_vector_cdc:2.0"
+set rv32_vlnv "${ip_vendor_name}:u96_ai_vision:rv32_pipeline_axi_subsystem:1.0"
+set mailbox_vlnv "${ip_vendor_name}:u96_ai_vision:rv32_job_mailbox:1.0"
 if {![info exists ultra96_board_variant]} {
     set ultra96_board_variant "v1"
 }
@@ -71,6 +72,16 @@ proc find_ultra96_board_part {} {
     return ""
 }
 
+proc packaged_ip_uses_vendor {component_file vendor_name} {
+    if {![file exists $component_file]} {
+        return 0
+    }
+    set component_handle [open $component_file r]
+    set component_xml [read $component_handle]
+    close $component_handle
+    return [expr {[string first ">$vendor_name<" $component_xml] >= 0}]
+}
+
 puts "Repo root: $repo_root"
 puts "$ultra96_board_label production-v2 project: $project_dir"
 
@@ -88,14 +99,17 @@ if {[file exists [file join $project_dir "$project_name.xpr"]]} {
     }
 }
 
-if {![file exists [file join $ip_repo_dir "axis_preprocess_vector_cdc/component.xml"]]} {
-    puts "Production-v2 packaged IP was not found. Packaging it now."
+set preproc_component [file join $ip_repo_dir "axis_preprocess_vector_cdc/component.xml"]
+if {![packaged_ip_uses_vendor $preproc_component $ip_vendor_name]} {
+    puts "Production-v2 packaged IP is missing or stale. Packaging it now."
     source [file join $script_dir "package_axis_preprocess_vector_cdc_ip_ultra96.tcl"]
 }
+set rv32_component [file join $rv32_ip_repo_dir "rv32_pipeline_axi_subsystem/component.xml"]
+set mailbox_component [file join $rv32_ip_repo_dir "rv32_job_mailbox/component.xml"]
 if {$enable_rv32_soc &&
-    (![file exists [file join $rv32_ip_repo_dir "rv32_pipeline_axi_subsystem/component.xml"]] ||
-     ![file exists [file join $rv32_ip_repo_dir "rv32_job_mailbox/component.xml"]])} {
-    puts "RV32 control IP was not found. Packaging it now."
+    (![packaged_ip_uses_vendor $rv32_component $ip_vendor_name] ||
+     ![packaged_ip_uses_vendor $mailbox_component $ip_vendor_name])} {
+    puts "RV32 control IP is missing or stale. Packaging it now."
     source [file join $script_dir "package_rv32_control_soc_ip.tcl"]
 }
 

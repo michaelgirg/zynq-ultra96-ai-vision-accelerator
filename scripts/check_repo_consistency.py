@@ -11,7 +11,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 TEXT_SUFFIXES = {
     ".S", ".c", ".f", ".h", ".json", ".ld", ".md", ".ps1", ".py",
-    ".sh", ".sv", ".tcl", ".yml", ".yaml",
+    ".sh", ".sv", ".tcl", ".txt", ".yml", ".yaml",
 }
 LINE_ORIENTED_HASH_SUFFIXES = {".h", ".mem"}
 HASH_MANIFEST = ROOT / "generated" / "test_vectors" / "manifest.json"
@@ -26,6 +26,21 @@ REGISTER_HEADER = ROOT / "software" / "riscv" / "include" / "vision_accel_regs.h
 MAILBOX_RTL = ROOT / "rtl" / "riscv" / "soc" / "rv32_job_mailbox.sv"
 MAILBOX_HEADER = ROOT / "software" / "riscv" / "include" / "job_mailbox.h"
 PIXELS_PER_FRAME = 28 * 28
+LOCAL_HYGIENE_PATTERNS = (
+    ("absolute Windows path", re.compile(r"(?i)(?<![A-Za-z0-9_])[A-Z]:[\\/]")),
+    ("user-home path", re.compile(r"(?i)(?:/home/|/Users/)[^/\s`\"']+")),
+    (
+        "personal or private host identifier",
+        re.compile(r"(?i)\b(?:mgirgis1|ece-lnx-[0-9]+|linux\.ece\.ufl\.edu)\b"),
+    ),
+    (
+        "credential-like token",
+        re.compile(r"\b(?:gh[pousr]_[A-Za-z0-9_]{10,}|github_pat_[A-Za-z0-9_]{10,})\b"),
+    ),
+)
+SCAN_EXCLUDED_DIRS = {
+    ".git", ".venv", ".Xil", "__pycache__", "build", "vitis", "work",
+}
 
 
 def repository_path(value: str) -> Path:
@@ -45,14 +60,23 @@ def sha256(path: Path) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
+def is_source_text(path: Path) -> bool:
+    if not path.is_file() or path.suffix not in TEXT_SUFFIXES:
+        return False
+    relative_parts = path.relative_to(ROOT).parts
+    return not any(
+        part == "generated"
+        or part in SCAN_EXCLUDED_DIRS
+        or part.startswith("ip_repo")
+        or part.endswith((".cache", ".gen", ".hw", ".ip_user_files", ".runs", ".sim", ".srcs"))
+        or part.endswith("_vivado")
+        for part in relative_parts
+    )
+
+
 def check_text_hygiene(errors: list[str]) -> None:
     for path in ROOT.rglob("*"):
-        if (
-            not path.is_file()
-            or ".git" in path.parts
-            or "generated" in path.parts
-            or path.suffix not in TEXT_SUFFIXES
-        ):
+        if not is_source_text(path):
             continue
         text = path.read_text(encoding="utf-8")
         if text and not text.endswith("\n"):
@@ -60,6 +84,20 @@ def check_text_hygiene(errors: list[str]) -> None:
         for line_number, line in enumerate(text.splitlines(), start=1):
             if line.endswith((" ", "\t")):
                 errors.append(f"{path.relative_to(ROOT)}:{line_number}: trailing whitespace")
+
+
+def check_local_hygiene(errors: list[str]) -> None:
+    for path in ROOT.rglob("*"):
+        if path == Path(__file__).resolve() or not is_source_text(path):
+            continue
+        text = path.read_text(encoding="utf-8")
+        for description, pattern in LOCAL_HYGIENE_PATTERNS:
+            match = pattern.search(text)
+            if match:
+                line_number = text.count("\n", 0, match.start()) + 1
+                errors.append(
+                    f"{path.relative_to(ROOT)}:{line_number}: {description} is not portable"
+                )
 
 
 def check_hashed_vectors(errors: list[str]) -> None:
@@ -247,6 +285,7 @@ def check_riscv_mem_packing(errors: list[str]) -> None:
 def main() -> None:
     errors: list[str] = []
     check_text_hygiene(errors)
+    check_local_hygiene(errors)
     check_hashed_vectors(errors)
     check_vector_manifest(errors)
     check_register_map(errors)

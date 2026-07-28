@@ -53,14 +53,19 @@ function Invoke-VivadoStage {
     }
 }
 
+function Invoke-Rv32IpPackaging {
+    Invoke-VivadoStage "package_axis_preprocess_vector_cdc_ip_ultra96.tcl"
+    Invoke-VivadoStage "package_rv32_control_soc_ip.tcl"
+}
+
 switch ($Stage) {
-    "package" { Invoke-VivadoStage "package_rv32_control_soc_ip.tcl" }
+    "package" { Invoke-Rv32IpPackaging }
     "create"  { Invoke-VivadoStage "create_ultra96_v2_rv32_soc_project.tcl" }
     "synth"   { Invoke-VivadoStage "run_ultra96_v2_rv32_soc_synth.tcl" }
     "impl"    { Invoke-VivadoStage "run_ultra96_v2_rv32_soc_implementation.tcl" }
     "all" {
         Invoke-VivadoStage "check_ultra96_v2_board.tcl"
-        Invoke-VivadoStage "package_rv32_control_soc_ip.tcl"
+        Invoke-Rv32IpPackaging
         Invoke-VivadoStage "create_ultra96_v2_rv32_soc_project.tcl"
         Invoke-VivadoStage "run_ultra96_v2_rv32_soc_synth.tcl"
         Invoke-VivadoStage "run_ultra96_v2_rv32_soc_implementation.tcl"

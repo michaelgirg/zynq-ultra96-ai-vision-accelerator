@@ -22,9 +22,9 @@ top/preprocess_uvm_top.sv     DUT top-level testbench
 filelist.f                    UVM compile filelist
 ```
 
-## UF Server Run
+## Licensed Questa Run
 
-Run from `~/zb-ai-vision-verif` after extracting `zb-ai-vision-verif.zip`.
+Run from the repository root on a host with Questa and UVM installed.
 
 ```bash
 source /apps/reconfig/enable_std

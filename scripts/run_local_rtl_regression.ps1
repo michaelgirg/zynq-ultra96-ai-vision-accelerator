@@ -1,20 +1,33 @@
 param(
-    [string]$QuestaBin = "C:\intelFPGA\21.1\questa_fse\win64",
+    [string]$QuestaBin = "",
     [string]$PythonExe = "python",
     [switch]$KeepSimulatorOutputs
 )
 
 $ErrorActionPreference = "Stop"
 $projectRoot = Split-Path -Parent $PSScriptRoot
-$vlib = Join-Path $QuestaBin "vlib.exe"
-$vlog = Join-Path $QuestaBin "vlog.exe"
-$vsim = Join-Path $QuestaBin "vsim.exe"
 
-foreach ($tool in @($vlib, $vlog, $vsim)) {
-    if (-not (Test-Path -LiteralPath $tool)) {
-        throw "Missing Questa executable: $tool"
+function Resolve-QuestaTool {
+    param([string]$Name)
+
+    if ($QuestaBin) {
+        $candidate = Join-Path $QuestaBin "$Name.exe"
+        if (-not (Test-Path -LiteralPath $candidate)) {
+            throw "Missing Questa executable: $candidate"
+        }
+        return (Resolve-Path -LiteralPath $candidate).Path
     }
+
+    $command = Get-Command $Name -ErrorAction SilentlyContinue
+    if (-not $command) {
+        throw "Cannot find $Name on PATH; pass -QuestaBin with the Questa executable directory."
+    }
+    return $command.Source
 }
+
+$vlib = Resolve-QuestaTool "vlib"
+$vlog = Resolve-QuestaTool "vlog"
+$vsim = Resolve-QuestaTool "vsim"
 
 function Invoke-CheckedCommand {
     param(

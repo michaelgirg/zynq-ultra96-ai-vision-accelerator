@@ -4,7 +4,7 @@ set script_dir [file dirname [file normalize [info script]]]
 set repo_root [file normalize [file join $script_dir "../.."]]
 set ip_repo_dir [file normalize [file join $repo_root "vivado/ip_repo_rv32_soc"]]
 set package_part_name "xczu3eg-sbva484-1-i"
-set vendor_name "mgirgis1.local"
+set vendor_name "user.org"
 set library_name "u96_ai_vision"
 
 file mkdir $ip_repo_dir

@@ -9,7 +9,7 @@ set ip_root [file normalize [file join $ip_repo_dir "axis_preprocess_vector_cdc"
 # Keep this name private to packaging. This Tcl can be sourced by the V2
 # project creator, whose project part is the industrial-grade -1-i device.
 set package_part_name "xczu3eg-sbva484-1-e"
-set vendor_name "mgirgis1.local"
+set vendor_name "user.org"
 set library_name "u96_ai_vision"
 set ip_name "axis_preprocess_vector_cdc"
 set ip_version "2.0"

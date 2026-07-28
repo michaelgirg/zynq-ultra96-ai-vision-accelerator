@@ -22,6 +22,12 @@ On Windows, `scripts/run_ultra96_v2_local_vivado.ps1` wraps these stages. Pass `
 
 Generated Vivado projects, logs, reports, bitstreams, and XSA files are intentionally excluded from source control. Release binaries are distributed separately with the matching SHA256 manifest.
 
+All Tcl paths are derived from `[info script]`, and PowerShell wrappers derive
+the repository root from `$PSScriptRoot`. Vivado, board-store, and toolchain
+locations are runtime arguments or environment variables; no developer machine
+path is tracked. Packaged project IP uses the neutral
+`user.org:u96_ai_vision` VLNV namespace.
+
 ## RV32 heterogeneous control SoC
 
 The RV32 flow extends the released accelerator-only checkpoint with the
@@ -37,6 +43,11 @@ powershell -ExecutionPolicy Bypass -File .\scripts\run_ultra96_v2_rv32_soc_local
   -Stage all
 ```
 
+The `package` and `all` stages refresh both the accelerator and RV32 IP
+packages. Project creation also detects and replaces stale packaged-IP vendor
+metadata, so ignored output from an older checkout cannot silently enter the
+block design.
+
 If Vivado is not on `PATH`, append
 `-VivadoPath "<Vivado-install>\2025.2\bin\vivado.bat"`. If the board files are
 installed through the Windows Vivado Store, the wrapper discovers that board
@@ -51,3 +62,5 @@ The completed reference build closes timing at +2.047 ns setup WNS and +0.011
 ns hold WHS with zero failing endpoints. See
 `docs/rv32_soc_integration.md` for utilization and signoff details, and
 `hardware/reports/ultra96_v2_rv32_soc_sha256.txt` for artifact hashes.
+This checkpoint establishes implementation readiness; execution on a physical
+Ultra96-V2 remains a separate runtime-validation step.

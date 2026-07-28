@@ -1,4 +1,6 @@
-# ZB AI Vision Accelerator
+# Zynq Ultra96 AI Vision Accelerator
+
+[![Portable Checks](https://github.com/michaelgirg/zynq-ultra96-ai-vision-accelerator/actions/workflows/ci.yml/badge.svg)](https://github.com/michaelgirg/zynq-ultra96-ai-vision-accelerator/actions/workflows/ci.yml)
 
 Reusable FPGA image-preprocessing IP for 28x28 grayscale AXI4-Stream frames,
 implemented and verified as a Zynq UltraScale+ production design.
@@ -79,6 +81,12 @@ Run the local checks from the repository root:
 powershell -ExecutionPolicy Bypass -File .\scripts\run_local_rtl_regression.ps1
 ```
 
+The script discovers Questa commands from `PATH`. If needed, pass
+`-QuestaBin "<Questa-install>\win64"`; no workstation path is stored in the
+repository. The compiled RV32 firmware suite is available through
+`scripts/run_riscv_firmware_regression.ps1` when a bare-metal RISC-V GNU
+toolchain is installed.
+
 ## Release artifacts
 
 The [Ultra96-V2 production release candidate](https://github.com/michaelgirg/zynq-ultra96-ai-vision-accelerator/releases/tag/ultra96-v2-rc1)
@@ -86,8 +94,9 @@ contains the bitstream, bitstream-inclusive XSA, and SHA256 manifest. Generated
 Vivado/Vitis projects, simulator databases, logs, local machine settings, and
 release binaries are excluded from the source tree.
 
-The RV32 SoC build also emits a bitstream and bitstream-inclusive XSA. Their
-checkpoint integrity hashes are tracked in
+The RV32 SoC build also emits `u96v2rv32_wrapper.bit` and
+`ultra96_v2_rv32_ai_vision_soc.xsa`. The reference checkpoint hashes use only
+portable artifact basenames and are tracked in
 [`hardware/reports/ultra96_v2_rv32_soc_sha256.txt`](hardware/reports/ultra96_v2_rv32_soc_sha256.txt).
 
 ## Ultra96-V2 production flow
@@ -96,9 +105,15 @@ The V2 flow targets the Avnet Ultra96-V2 ZU3EG device with a 100 MHz control
 clock and 150 MHz stream/data clock. It uses AMD/Xilinx XPM CDC primitives for
 single-bit and bundled-data crossings and emits reproducible Vivado reports.
 
-Set `ULTRA96_BOARD_REPO` to the board-store directory on the build machine,
-then run the V2 Tcl scripts through Vivado 2025.2. The project creator refuses
-to overwrite an existing generated project.
+The Windows wrapper discovers a Vivado Store board installation automatically;
+other installations can provide `-BoardRepo` or `ULTRA96_BOARD_REPO`. Tool and
+board locations remain runtime parameters and are never embedded in generated
+source. Packaged user IP uses the neutral `user.org:u96_ai_vision` namespace.
+
+CI checks predictor outputs, generated-file/register-map consistency, firmware
+reset-vector placement, SystemVerilog lint, and repository hygiene. Generated
+projects, reports, logs, simulator databases, tool settings, binaries, and
+absolute host paths remain outside source control.
 
 The control/register definitions are documented in
 [`docs/register_map.md`](docs/register_map.md). Final production evidence is
