@@ -6,6 +6,7 @@ __pycache__/
 # Questa
 work/
 work_*/
+*_work/
 transcript
 vsim.wlf
 *.wlf
