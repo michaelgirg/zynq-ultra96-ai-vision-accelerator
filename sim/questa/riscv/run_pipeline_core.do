@@ -22,8 +22,9 @@ vlog -work $work_lib -sv ../../../tb/riscv/integration/pipeline/core_pipeline_ca
 vlog -work $work_lib -sv ../../../tb/riscv/integration/pipeline/core_pipeline_mmio_tb.sv
 vlog -work $work_lib -sv ../../../tb/riscv/integration/soc/rv32_pipeline_axi_top_tb.sv
 vlog -work $work_lib -sv ../../../tb/riscv/integration/soc/rv32_vision_accelerator_tb.sv
+vlog -work $work_lib -sv ../../../tb/riscv/integration/soc/rv32_dma_control_tb.sv
 
-foreach test {core_pipeline_tb core_pipeline_m_tb core_pipeline_cache_tb core_pipeline_cache_fault_tb core_pipeline_mmio_tb rv32_pipeline_axi_top_tb rv32_vision_accelerator_tb} {
+foreach test {core_pipeline_tb core_pipeline_m_tb core_pipeline_cache_tb core_pipeline_cache_fault_tb core_pipeline_mmio_tb rv32_pipeline_axi_top_tb rv32_vision_accelerator_tb rv32_dma_control_tb} {
     echo "Running $test"
     vsim -c $work_lib.$test
     onfinish stop
