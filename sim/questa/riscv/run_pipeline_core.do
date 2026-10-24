@@ -10,6 +10,7 @@ vlog -work $work_lib -sv ../../../rtl/riscv/pipeline/core_pipeline.sv
 vlog -work $work_lib -sv ../../../rtl/riscv/soc/rv32_pipeline_axi_top.sv
 vlog -work $work_lib -sv ../../../rtl/riscv/soc/rv32_axi_memory_portal.sv
 vlog -work $work_lib -sv ../../../rtl/riscv/soc/rv32_pipeline_axi_subsystem.sv
+vlog -work $work_lib -sv ../../../verif/formal/rv32_stall_operand_sva.sv
 vlog -work $work_lib -sv ../../../rtl/axis_threshold_preprocess.sv
 vlog -work $work_lib -sv ../../../rtl/sobel_core.sv
 vlog -work $work_lib -sv ../../../rtl/image_sobel_engine.sv

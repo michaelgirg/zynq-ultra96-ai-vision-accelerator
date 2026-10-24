@@ -31,6 +31,7 @@ try {
         Checked "vlog" @("-work", $library, "-sv", "-f", "scripts/rtl_rv32_filelist.f",
             "+incdir+tb/riscv/integration/soc",
             "-f", "scripts/rtl_filelist.f", "rtl/riscv/soc/rv32_job_mailbox.sv",
+            "verif/formal/rv32_stall_operand_sva.sv",
             "tb/riscv/integration/soc/soc_sim_bus_pkg.sv",
             "tb/riscv/integration/soc/soc_dma_model.sv",
             "tb/riscv/integration/soc/rv32_soc_end_to_end_tb.sv")
@@ -49,6 +50,7 @@ try {
             "--report", "$captureDir/c_predictions.json")
         if ($CCompiler) { $checkArgs += @("--cc", $CCompiler) }
         Checked $PythonExe $checkArgs
+        Checked $PythonExe @("scripts/check_soc_coverage.py", $outputDir, "--period", "$period")
     }
 }
 finally { Pop-Location }

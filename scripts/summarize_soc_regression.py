@@ -6,6 +6,7 @@ import hashlib
 import json
 import re
 from pathlib import Path
+from check_soc_coverage import check as check_coverage
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCES = (
@@ -18,6 +19,7 @@ SOURCES = (
     "tb/riscv/integration/soc/soc_sim_bus_pkg.sv",
     "tb/riscv/integration/soc/soc_sim_axi.svh",
     "scripts/validate_soc_captures.py",
+    "verif/formal/rv32_stall_operand_sva.sv",
 )
 
 
@@ -46,6 +48,7 @@ def main() -> None:
         clocks.append({"axis_half_period_ps": half, "jobs": jobs, "successful_frames": frames,
                        "compared_words": compared, "dma_resets": resets,
                        "native_c_frames": len(c["frames"]),
+                       "directed_coverage": check_coverage(args.results / f"{period}ps/coverage.json", period),
                        "native_c_max_logit_error": max(f["max_logit_error"] for f in c["frames"]),
                        "feature_captures": [{k: f[k] for k in ("model", "sample", "capture_sha256")}
                                             for f in c["frames"]]})

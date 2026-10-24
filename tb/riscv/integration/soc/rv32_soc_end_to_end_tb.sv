@@ -19,6 +19,12 @@ module rv32_soc_end_to_end_tb #(
     logic [3:0] tx_keep, rx_keep;
     logic tx_valid, tx_ready, tx_last, rx_valid, rx_ready, rx_last, irq;
     int injection = 0, jobs = 0, frames = 0, compared = 0;
+    bit [3:0] modes_hit, abort_hit;
+    bit [1:0] models_hit, discovery_hit;
+    bit [15:0] faults_hit, recoveries_hit;
+    bit [11:0] descriptors_hit;
+    bit quarantine_hit, candidate_model;
+    int recovery_bit = -1;
     logic [7:0] input_pixels [784];
     logic [31:0] expected [784], config_words [44], image [16384];
     string firmware_dir = "software/riscv/build/e2e";
@@ -68,10 +74,11 @@ module rv32_soc_end_to_end_tb #(
             pc, halted, illegal_instruction, instruction_fault, data_fault);
 
     task automatic host_write(input logic [31:0] address, value,
-                              input logic [1:0] expected_response = 0);
+                              input logic [1:0] expected_response = 0,
+                              input logic [3:0] strobes = 15);
         @(negedge clk);
         host.awaddr = address; host.awvalid = 1;
-        host.wdata = value; host.wstrb = 15; host.wvalid = 0;
+        host.wdata = value; host.wstrb = strobes; host.wvalid = 0;
         // Deliberately separate address and data and delay BREADY.
         fork
             begin
@@ -137,6 +144,7 @@ module rv32_soc_end_to_end_tb #(
             host_write(ACC + 'h64, config_words[f*11+t]);
         end
         host_write(ACC + 'h68, 1);
+        candidate_model = candidate;
     endtask
     task automatic prepare_frame(input int sample, mode, input bit candidate = 0);
         string name, golden;
@@ -195,7 +203,19 @@ module rv32_soc_end_to_end_tb #(
                 compared++;
             end
             frames++;
+            modes_hit[mode] = 1;
+            if (mode == 3) models_hit[candidate_model] = 1;
+            if (recovery_bit >= 0) begin
+                recoveries_hit[recovery_bit] = 1;
+                recovery_bit = -1;
+            end
         end
+        if (fault >= 1 && fault <= 4) begin
+            recovery_bit = mode*4 + fault-1;
+            faults_hit[recovery_bit] = 1;
+        end
+        if (fault == 6 || fault == 7) discovery_hit[fault-6] = 1;
+        if (error == 7 && fault == 0) quarantine_hit = 1;
         if (dma.ddr[1023] !== 32'hC0FF_EE01 || dma.ddr[1808] !== 32'hC0FF_EE02)
             $fatal(1, "DMA wrote outside output frame");
         host_write(MB, 16);
@@ -220,7 +240,7 @@ module rv32_soc_end_to_end_tb #(
     endtask
     initial begin : scenario
         logic [31:0] value;
-        int ignored;
+        int ignored, coverage_file;
         ignored = $value$plusargs("FIRMWARE_DIR=%s", firmware_dir);
         ignored = $value$plusargs("OUTPUT_DIR=%s", output_dir);
         repeat (8) @(negedge clk); rst = 0;
@@ -233,6 +253,20 @@ module rv32_soc_end_to_end_tb #(
         host_read(32'hA004_7000, value);
         if (value !== 32'h51A7_C0DE) $fatal(1, "DMEM portal mismatch");
         host_write(MB + 'h2C, 1);
+        // Abort contract before the first stream beat, including byte strobes.
+        host_write(ACC, 1);
+        host_write(ACC, 4, 0, 0); host_read(ACC + 4, value);
+        if (!(value & 8)) $fatal(1, "zero-WSTRB abort changed armed state");
+        abort_hit[0] = 1;
+        host_write(ACC, 4, 0, 14); host_read(ACC + 4, value);
+        if (!(value & 8)) $fatal(1, "upper-byte abort changed armed state");
+        abort_hit[1] = 1;
+        host_write(ACC, 4, 0, 1); host_read(ACC + 4, value);
+        if (value & 9) $fatal(1, "low-byte abort failed before first input");
+        abort_hit[2] = 1;
+        host_write(ACC, 4); host_read(ACC + 4, value);
+        if (value & 9) $fatal(1, "repeated idle abort failed");
+        abort_hit[3] = 1;
         program_vector(0);
         for (int mode = 0; mode < 4; mode++) for (int sample = 0; sample < 8; sample++) begin
             prepare_frame(sample, mode); job(mode);
@@ -260,6 +294,7 @@ module rv32_soc_end_to_end_tb #(
                 10: job(0, 2, 0, 3136, INPUT_ADDR, 32'h7FFF_FC00);
                 11: job(0, 2, 0, 2);
             endcase
+            descriptors_hit[invalid] = 1;
             job(0);
         end
         // Halted MM2S, halted S2MM, partial-frame timeout, and bad TKEEP.
@@ -278,6 +313,17 @@ module rv32_soc_end_to_end_tb #(
         prepare_frame(0, 0); job(0, 7, 5); job(0, 7);
         if (dma.input_stalls == 0 || dma.output_stalls == 0)
             $fatal(1, "stream backpressure was not exercised");
+        if (modes_hit != 15 || models_hit != 3 || faults_hit != 65535 ||
+            recoveries_hit != 65535 || descriptors_hit != 4095 || discovery_hit != 3 ||
+            abort_hit != 15 || !quarantine_hit)
+            $fatal(1, "directed SoC coverage matrix has holes");
+        coverage_file = $fopen({output_dir, "/coverage.json"}, "w");
+        if (!coverage_file) $fatal(1, "cannot write directed coverage record");
+        $fdisplay(coverage_file, "{\"axis_half_period_ps\":%0d,\"modes\":%0d,\"models\":%0d,\"faults\":%0d,\"recoveries\":%0d,\"descriptors\":%0d,\"discovery\":%0d,\"abort\":%0d,\"quarantine\":%0d}",
+            AXIS_HALF_PERIOD_PS, modes_hit, models_hit, faults_hit, recoveries_hit,
+            descriptors_hit, discovery_hit, abort_hit, quarantine_hit);
+        $fclose(coverage_file);
+        $display("PASS: directed SoC coverage 57/57 planned bins (not UVM/code coverage)");
         $display("PASS: end-to-end SoC jobs=%0d frames=%0d compared=%0d axis_half_ps=%0d resets=%0d",
             jobs, frames, compared, AXIS_HALF_PERIOD_PS, dma.resets);
         $finish;
