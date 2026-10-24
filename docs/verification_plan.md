@@ -1,5 +1,11 @@
 # Verification Plan
 
+The [end-to-end SoC gate](soc_end_to_end_verification.md) adds real host-portal
+boot, full frames, candidate coefficients, native C prediction checks and
+failure recovery. Existing licensed UVM closure below is baseline evidence;
+the current `0x00020001` register-version update is locally compiled, with a
+licensed rerun separate from the directed SoC gate.
+
 ## Goal
 
 Upgrade the project from directed RTL testbenches into a reusable

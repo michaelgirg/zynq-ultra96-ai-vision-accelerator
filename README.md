@@ -61,6 +61,10 @@ model; see [`docs/rv32_soc_integration.md`](docs/rv32_soc_integration.md).
 | RV32 local memory | 64 KiB IMEM + 64 KiB DMEM mapped to 32 RAMB36E2 blocks |
 | Estimated power | 2.119 W |
 
+Implementation tables describe preserved routed checkpoints. Current recovery/
+operand-retention RTL (`IP_VERSION=0x00020001`) requires a fresh Vivado build;
+the recorded timing/resource numbers are not signoff for those changes.
+
 ## Verification summary
 
 - Python predictor: 6,272/6,272 packed outputs matched.
@@ -70,10 +74,14 @@ model; see [`docs/rv32_soc_integration.md`](docs/rv32_soc_integration.md).
   reset-abort recovery, response flushing, and IRQ crossing pass.
 - UVM: 11 focused tests plus a 100-seed randomized predictor run pass with zero
   UVM errors/fatals, assertion failures, or simulator errors.
-- RV32 SoC: processor preservation, MMIO/AXI, mailbox, host boot, and both
-  directed and GCC-built firmware DMA-control tests pass against the real
-  accelerator RTL, including five injected firmware error paths.
+- RV32 SoC: 306 jobs across three clocks, 210 full frames and 164,640 exact
+  output checks; real portal boot/mailbox/CDC, candidate coefficients, native C
+  capture checks and next-job recovery.
+  See the [end-to-end regression](docs/soc_end_to_end_verification.md).
 - Targeted functional coverage: 100%.
+
+Licensed UVM/coverage results above are preserved baseline evidence. The current
+version-expectation update is locally compiled; a licensed rerun is separate.
 
 Run the local checks from the repository root:
 

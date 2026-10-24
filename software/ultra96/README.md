@@ -47,6 +47,12 @@ arrays and exact word counts. Pass those arrays to `rv32_boot_controller`; it
 keeps the core in reset on a bounds or readback failure and releases it only
 after both 64 KiB portals verify successfully.
 
+Reset is asserted before validating replacement images, and empty IMEM is
+rejected. Native tests: `python scripts/validate_rv32_boot.py` (add `--cc cl`
+in an MSVC shell). Recovery-aware firmware requires `IP_VERSION=0x00020001`;
+saved older bitstream/XSA files need rebuilding. Error 7 quarantines later
+jobs; mailbox ACK alone does not restore DMA service.
+
 ```c
 rv32_boot_controller(
     RV32_MAILBOX_BASE_DEFAULT,

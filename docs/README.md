@@ -1,5 +1,8 @@
 # Documentation guide
 
+- [End-to-end SoC simulation](soc_end_to_end_verification.md): real portal boot,
+  full-frame golden checks, native C predictions, failure recovery and limits.
+
 ## Current production documents
 
 - [Four-filter model training and ARM classifier](vector_model_training.md):
