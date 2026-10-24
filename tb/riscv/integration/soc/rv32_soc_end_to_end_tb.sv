@@ -14,6 +14,8 @@ module rv32_soc_end_to_end_tb #(
     request_t cpu, host = '0, target [5];
     response_t cpu_response, host_response, accelerator_response, response [5];
     logic resetn, halted, illegal_instruction, instruction_fault, data_fault;
+    logic mailbox_irq, axi_timeout, axi_quarantined;
+    logic [31:0] axi_fault_addr, axi_fault_info, axi_fault_wait;
     logic [31:0] pc;
     logic [31:0] tx_data, rx_data;
     logic [3:0] tx_keep, rx_keep;
@@ -37,12 +39,17 @@ module rv32_soc_end_to_end_tb #(
         .current_pc_o(pc), .instruction_o(), .halted_o(halted),
         .illegal_instruction_o(illegal_instruction),
         .instruction_fault_o(instruction_fault), .data_fault_o(data_fault),
+        .axi_timeout_o(axi_timeout), .axi_quarantined_o(axi_quarantined),
+        .axi_fault_addr_o(axi_fault_addr), .axi_fault_info_o(axi_fault_info),
+        .axi_fault_wait_o(axi_fault_wait),
         `SOC_SIM_AXI(M_AXI, cpu, cpu_response, 32),
         `SOC_SIM_AXI(S_AXI_IMEM, target[3], response[3], 16),
         `SOC_SIM_AXI(S_AXI_DMEM, target[4], response[4], 16)
     );
     rv32_job_mailbox mailbox (
         .S_AXI_ACLK(clk), .S_AXI_ARESETN(!rst), .rv32_resetn(resetn),
+        .irq(mailbox_irq), .axi_timeout, .axi_quarantined,
+        .axi_fault_addr, .axi_fault_info, .axi_fault_wait,
         `SOC_SIM_AXI(S_AXI, target[2], response[2], 12)
     );
     axis_preprocess_vector_cdc accelerator (
@@ -169,7 +176,8 @@ module rv32_soc_end_to_end_tb #(
     task automatic job(input int mode, error = 0, fault = 0,
         input logic [31:0] bytes = 3136, input logic [31:0] src = INPUT_ADDR,
         input logic [31:0] dst = OUTPUT_ADDR, input logic [31:0] threshold = 128);
-        logic [31:0] status, value;
+        logic [31:0] status, value, high;
+        logic [63:0] submit_time, claim_time, end_time, elapsed;
         int before_starts, polls;
         before_starts = dma.starts;
         injection = fault;
@@ -183,6 +191,20 @@ module rv32_soc_end_to_end_tb #(
             host_read(MB + 4, status);
             if (++polls > 60000) $fatal(1, "job %0d timed out pc=%h status=%h", jobs, pc, status);
         end while (!(status & 12));
+        if (!mailbox_irq || axi_timeout || axi_quarantined)
+            $fatal(1, "missing job IRQ or unexpected AXI watchdog fault");
+        host_read(MB + 'h34, value);
+        if (value !== (error == 0 ? 1 : 2)) $fatal(1, "wrong job interrupt cause");
+        host_read(MB + 'h40, value); host_read(MB + 'h44, high); submit_time = {high, value};
+        host_read(MB + 'h48, value); host_read(MB + 'h4C, high); claim_time = {high, value};
+        host_read(MB + 'h50, value); host_read(MB + 'h54, high); end_time = {high, value};
+        host_read(MB + 'h58, value); host_read(MB + 'h5C, high); elapsed = {high, value};
+        if (!(submit_time < claim_time && claim_time < end_time && elapsed == end_time - submit_time))
+            $fatal(1, "invalid whole-job timestamps");
+        host_read(MB + 'h60, value);
+        if (value !== frames + int'(error == 0)) $fatal(1, "wrong completion counter");
+        host_read(MB + 'h64, value);
+        if (value !== jobs - frames - int'(error == 0)) $fatal(1, "wrong failure counter");
         if (status !== (error == 0 ? 4 : 8))
             $fatal(1, "job %0d terminal status %h expected error %0d", jobs, status, error);
         host_read(MB + 'h24, value);
@@ -220,7 +242,7 @@ module rv32_soc_end_to_end_tb #(
             $fatal(1, "DMA wrote outside output frame");
         host_write(MB, 16);
         host_read(MB + 4, status);
-        if (status !== 0) $fatal(1, "ACK failed to release mailbox");
+        if (status !== 0 || mailbox_irq) $fatal(1, "ACK failed to release mailbox/IRQ");
         $display("PASS: SoC job=%0d mode=%0d expected_error=%0d fault=%0d polls=%0d",
             jobs, mode, error, fault, polls);
         injection = 0;
@@ -253,6 +275,7 @@ module rv32_soc_end_to_end_tb #(
         host_read(32'hA004_7000, value);
         if (value !== 32'h51A7_C0DE) $fatal(1, "DMEM portal mismatch");
         host_write(MB + 'h2C, 1);
+        host_write(MB + 'h38, 7);
         // Abort contract before the first stream beat, including byte strobes.
         host_write(ACC, 1);
         host_write(ACC, 4, 0, 0); host_read(ACC + 4, value);

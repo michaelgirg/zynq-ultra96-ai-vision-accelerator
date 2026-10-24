@@ -8,7 +8,8 @@ module rv32_pipeline_axi_top #(
     parameter int DCACHE_NUM_SETS = 16,
     parameter int DCACHE_NUM_WAYS = 2,
     parameter int IMEM_LATENCY = 15,
-    parameter int DMEM_LATENCY = 15
+    parameter int DMEM_LATENCY = 15,
+    parameter int AXI_WATCHDOG_CYCLES = 1000000
 ) (
     input  logic        clk_i,
     input  logic        rst_i,
@@ -20,6 +21,11 @@ module rv32_pipeline_axi_top #(
     output logic        illegal_instruction_o,
     output logic        instruction_fault_o,
     output logic        data_fault_o,
+    output logic        axi_timeout_o,
+    output logic        axi_quarantined_o,
+    output logic [31:0] axi_fault_addr_o,
+    output logic [31:0] axi_fault_info_o,
+    output logic [31:0] axi_fault_wait_o,
 
     output logic [31:0] M_AXI_AWADDR,
     output logic [2:0]  M_AXI_AWPROT,
@@ -127,9 +133,15 @@ module rv32_pipeline_axi_top #(
         .dmem_host_resp_fault
     );
 
-    rv32_axi_lite_master u_axi_master (
+    rv32_axi_lite_master #(.WATCHDOG_CYCLES(AXI_WATCHDOG_CYCLES)) u_axi_master (
         .clk              (clk_i),
-        .rst              (rst_i),
+        .rst              (memory_rst_i),
+        .processor_reset  (rst_i),
+        .watchdog_timeout (axi_timeout_o),
+        .quarantined      (axi_quarantined_o),
+        .watchdog_addr    (axi_fault_addr_o),
+        .watchdog_info    (axi_fault_info_o),
+        .watchdog_wait    (axi_fault_wait_o),
         .req_valid        (mmio_req_valid),
         .req_ready        (mmio_req_ready),
         .req_write        (mmio_req_write),

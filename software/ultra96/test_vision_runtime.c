@@ -2,6 +2,9 @@
 #include "vision_sim.h"
 #include "vector_classifier_weights.h"
 #include "vector_front_config.h"
+#include "job_mailbox.h"
+#include "soc_address_map.h"
+#include "axi_dma_regs.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -106,6 +109,21 @@ int main(void)
     CHECK(setup(VISION_RV32_CONTROL) == 0);
     CHECK(vision_device_boot(&device, NULL, 0, NULL, 0, &front) == VISION_INVALID);
     CHECK(sim.resetn == 0);
+    CHECK(setup(VISION_RV32_CONTROL) == 0);
+    sim.fault = SIM_BUS_TIMEOUT;
+    CHECK(vision_run_image(&device, image, &vector_classifier_model, &run) == VISION_NEEDS_RESET);
+    CHECK(device.quarantined && run.prediction == -1 && sim.invalidates == 0);
+    CHECK(run.diagnostics.axi_status == 3 && run.diagnostics.first_fault_kind == MAILBOX_FAULT_AXI);
+    CHECK(run.diagnostics.first_fault_addr == SOC_AXI_DMA_BASE + DMA_MM2S_DMASR);
+    CHECK(run.diagnostics.first_fault_info == MAILBOX_AXI_WAIT_R && run.diagnostics.first_fault_wait == 1000000);
+    CHECK(run.diagnostics.axi_fault_addr == run.diagnostics.first_fault_addr &&
+        run.diagnostics.axi_fault_info == MAILBOX_AXI_WAIT_R && run.diagnostics.axi_fault_wait == 1000000);
+    CHECK(sim.unsafe_fault_reads == 0 && sim.mailbox[1] == 2 && sim.launches == 1);
+    CHECK(vision_run_image(&device, image, &vector_classifier_model, &run) == VISION_NEEDS_RESET);
+    CHECK(setup(VISION_RV32_CONTROL) == 0);
+    sim.fault = SIM_BUS_TIMEOUT;
+    CHECK(vision_device_boot(&device, instructions, 2, data, 1, &front) == VISION_NEEDS_RESET);
+    CHECK(device.quarantined && !sim.resetn && sim.unsafe_fault_reads == 0);
     for (int fault = SIM_CACHE_ERROR; fault <= SIM_WRONG_JOB; ++fault) {
         CHECK(setup(VISION_RV32_CONTROL) == 0);
         sim.fault = (enum vision_sim_fault)fault;

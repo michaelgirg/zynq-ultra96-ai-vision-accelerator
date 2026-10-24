@@ -32,7 +32,8 @@ static void complete(vision_sim_t *s)
 {
     uint8_t pixels[784];
     uint32_t error = 0;
-    if (!s->active || s->fault == SIM_TIMEOUT || s->fault == SIM_STUCK_RESET) return;
+    if (!s->active || s->fault == SIM_TIMEOUT || s->fault == SIM_STUCK_RESET ||
+        s->fault == SIM_BUS_TIMEOUT) return;
     if (--s->countdown > 0) return;
     s->active = 0;
     s->tx_status = s->rx_status = 2;
@@ -78,14 +79,29 @@ static int read32(void *context, uintptr_t address, uint32_t *value)
     uint32_t base = (uint32_t)address & 0xffff0000u;
     uint32_t offset = (uint32_t)address & 0xffffu;
     if (offset & 3u) return -1;
+    if (s->fault == SIM_BUS_TIMEOUT && (s->active || !s->resetn) &&
+        (base == SOC_VISION_ACCEL_BASE || base == SOC_AXI_DMA_BASE)) {
+        ++s->unsafe_fault_reads; return -1;
+    }
     if (base == SOC_HOST_IMEM_BASE || base == SOC_HOST_DMEM_BASE) {
         *value = base == SOC_HOST_IMEM_BASE ? s->imem[offset/4] : s->dmem[offset/4];
         if (s->fault == SIM_BAD_READBACK) *value ^= 1;
-    } else if (base == SOC_MAILBOX_BASE && offset < 48) {
+    } else if (base == SOC_MAILBOX_BASE && offset < sizeof(s->mailbox)) {
+        if (s->fault == SIM_BUS_TIMEOUT && (s->active || !s->resetn) && offset == MAILBOX_REG_AXI_STATUS) {
+            s->mailbox[MAILBOX_REG_AXI_STATUS/4] = 3;
+            s->mailbox[MAILBOX_REG_FIRST_FAULT_KIND/4] = MAILBOX_FAULT_AXI;
+            s->mailbox[MAILBOX_REG_FIRST_FAULT_ADDR/4] = SOC_AXI_DMA_BASE + DMA_MM2S_DMASR;
+            s->mailbox[MAILBOX_REG_FIRST_FAULT_INFO/4] = MAILBOX_AXI_WAIT_R;
+            s->mailbox[MAILBOX_REG_FIRST_FAULT_WAIT/4] = 1000000;
+            s->mailbox[MAILBOX_REG_AXI_FAULT_ADDR/4] = SOC_AXI_DMA_BASE + DMA_MM2S_DMASR;
+            s->mailbox[MAILBOX_REG_AXI_FAULT_INFO/4] = MAILBOX_AXI_WAIT_R;
+            s->mailbox[MAILBOX_REG_AXI_FAULT_WAIT/4] = 1000000;
+        }
         if (offset == 4) complete(s);
         *value = s->mailbox[offset/4];
         if (offset == 0x28) *value = MAILBOX_ID_VALUE;
         if (offset == 0x2c) *value = (uint32_t)s->resetn;
+        if (offset == MAILBOX_REG_VERSION) *value = MAILBOX_VERSION_VALUE;
     } else if (base == SOC_VISION_ACCEL_BASE) {
         switch (offset) {
             case 0x04: *value = s->accel_status; break;

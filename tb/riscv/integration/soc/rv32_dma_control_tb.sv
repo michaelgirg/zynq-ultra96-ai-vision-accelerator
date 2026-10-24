@@ -1,6 +1,8 @@
 `timescale 1ns/1ps
 
 module rv32_dma_control_tb;
+    wire axi_timeout_o, axi_quarantined_o;
+    wire [31:0] axi_fault_addr_o, axi_fault_info_o, axi_fault_wait_o;
     import rv32i_pkg::*;
 
     localparam int MAX_CYCLES = 50000;

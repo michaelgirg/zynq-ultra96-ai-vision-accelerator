@@ -38,6 +38,10 @@ typedef struct {
     enum vision_stage stage;
     uint32_t job_id, mailbox_status, firmware_error, mm2s_status, s2mm_status;
     uint32_t accelerator_status, accelerator_errors, accelerator_cycles;
+    uint64_t submit_cycles, claim_cycles, end_cycles, job_cycles;
+    uint32_t axi_status, first_fault_kind, first_fault_job, first_fault_code;
+    uint32_t first_fault_addr, first_fault_info, first_fault_wait;
+    uint32_t axi_fault_addr, axi_fault_info, axi_fault_wait;
     int result, recovery_result;
     uint32_t polls;
 } vision_diagnostics_t;

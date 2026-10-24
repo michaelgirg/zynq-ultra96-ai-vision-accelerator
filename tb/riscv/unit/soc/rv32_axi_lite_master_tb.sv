@@ -3,6 +3,9 @@
 module rv32_axi_lite_master_tb;
     logic clk = 1'b0;
     logic rst = 1'b1;
+    logic processor_reset = 1'b0;
+    wire watchdog_timeout, quarantined;
+    wire [31:0] watchdog_addr, watchdog_info, watchdog_wait;
 
     logic        req_valid;
     logic        req_ready;

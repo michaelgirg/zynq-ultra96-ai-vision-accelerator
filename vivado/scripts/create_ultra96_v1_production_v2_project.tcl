@@ -229,6 +229,9 @@ if {$enable_rv32_soc} {
     connect_bd_net [get_bd_pins rst_ctrl/peripheral_reset] [get_bd_pins rv32/system_rst_i]
     connect_bd_net [get_bd_pins rst_ctrl/peripheral_aresetn] [get_bd_pins mailbox/S_AXI_ARESETN]
     connect_bd_net [get_bd_pins mailbox/rv32_resetn] [get_bd_pins rv32_reset_inv/Op1]
+    foreach signal {timeout quarantined fault_addr fault_info fault_wait} {
+        connect_bd_net [get_bd_pins rv32/axi_${signal}_o] [get_bd_pins mailbox/axi_${signal}]
+    }
     connect_bd_net [get_bd_pins rv32_reset_inv/Res] [get_bd_pins rv32/core_rst_i]
 }
 
@@ -266,7 +269,12 @@ connect_bd_intf_net [get_bd_intf_pins pre/M_AXIS] [get_bd_intf_pins dma/S_AXIS_S
 connect_bd_net [get_bd_pins dma/mm2s_introut] [get_bd_pins irq_concat/In0]
 connect_bd_net [get_bd_pins dma/s2mm_introut] [get_bd_pins irq_concat/In1]
 connect_bd_net [get_bd_pins pre/irq] [get_bd_pins irq_concat/In2]
-foreach irq_index {3 4 5 6 7} {
+if {$enable_rv32_soc} {
+    connect_bd_net [get_bd_pins mailbox/irq] [get_bd_pins irq_concat/In3]
+} else {
+    connect_bd_net [get_bd_pins irq_zero/dout] [get_bd_pins irq_concat/In3]
+}
+foreach irq_index {4 5 6 7} {
     connect_bd_net [get_bd_pins irq_zero/dout] [get_bd_pins irq_concat/In${irq_index}]
 }
 connect_bd_net [get_bd_pins irq_concat/dout] [get_bd_pins ps/pl_ps_irq0]

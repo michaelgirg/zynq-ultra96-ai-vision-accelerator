@@ -69,6 +69,9 @@ int vision_device_boot(vision_device_t *d, const uint32_t *imem, size_t ni,
 #define EXPECT(address, expected) do { if (rd(d, (address), &value)) return VISION_IO_ERROR; \
     if (value != (expected)) return VISION_ID_MISMATCH; } while (0)
     EXPECT(SOC_MAILBOX_BASE + MAILBOX_REG_ID, MAILBOX_ID_VALUE);
+    EXPECT(SOC_MAILBOX_BASE + MAILBOX_REG_VERSION, MAILBOX_VERSION_VALUE);
+    if (rd(d, SOC_MAILBOX_BASE + MAILBOX_REG_AXI_STATUS, &value)) return VISION_IO_ERROR;
+    if (value & MAILBOX_AXI_QUARANTINED) { d->quarantined = 1; return VISION_NEEDS_RESET; }
     EXPECT(SOC_VISION_ACCEL_BASE + VISION_REG_IP_ID, VISION_IP_ID_VALUE);
     if (rd(d, SOC_VISION_ACCEL_BASE + VISION_REG_IP_VERSION, &value)) return VISION_IO_ERROR;
     if (value < VISION_IP_VERSION_RECOVERY) return VISION_ID_MISMATCH;
@@ -109,9 +112,42 @@ int vision_device_boot(vision_device_t *d, const uint32_t *imem, size_t ni,
     return VISION_OK;
 }
 
+static int mailbox_snapshot(vision_device_t *d, vision_diagnostics_t *s)
+{
+    uint32_t low = 0, high = 0;
+    if (rd(d, SOC_MAILBOX_BASE + MAILBOX_REG_STATUS, &s->mailbox_status) ||
+        rd(d, SOC_MAILBOX_BASE + MAILBOX_REG_AXI_STATUS, &s->axi_status)) return VISION_IO_ERROR;
+#define FIELD(name, reg) (void)rd(d, SOC_MAILBOX_BASE + (reg), &s->name)
+    FIELD(first_fault_kind, MAILBOX_REG_FIRST_FAULT_KIND);
+    FIELD(first_fault_job, MAILBOX_REG_FIRST_FAULT_JOB);
+    FIELD(first_fault_code, MAILBOX_REG_FIRST_FAULT_CODE);
+    FIELD(first_fault_addr, MAILBOX_REG_FIRST_FAULT_ADDR);
+    FIELD(first_fault_info, MAILBOX_REG_FIRST_FAULT_INFO);
+    FIELD(first_fault_wait, MAILBOX_REG_FIRST_FAULT_WAIT);
+    FIELD(axi_fault_addr, MAILBOX_REG_AXI_FAULT_ADDR);
+    FIELD(axi_fault_info, MAILBOX_REG_AXI_FAULT_INFO);
+    FIELD(axi_fault_wait, MAILBOX_REG_AXI_FAULT_WAIT);
+#undef FIELD
+    /* Captured timestamp pairs are stable in terminal/quarantined ownership.
+     * A single host owns descriptors; never submit a new job during snapshot. */
+#define TIME(name, reg) do { low = high = 0; \
+    (void)rd(d, SOC_MAILBOX_BASE + (reg), &low); \
+    (void)rd(d, SOC_MAILBOX_BASE + (reg) + 4u, &high); \
+    s->name = ((uint64_t)high << 32) | low; } while (0)
+    TIME(submit_cycles, MAILBOX_REG_SUBMIT_LO);
+    TIME(claim_cycles, MAILBOX_REG_CLAIM_LO);
+    TIME(end_cycles, MAILBOX_REG_END_LO);
+    TIME(job_cycles, MAILBOX_REG_JOB_CYCLES_LO);
+#undef TIME
+    return VISION_OK;
+}
+
 static void snapshot(vision_device_t *d, vision_diagnostics_t *s)
 {
-    (void)rd(d, SOC_MAILBOX_BASE + MAILBOX_REG_STATUS, &s->mailbox_status);
+    if (mailbox_snapshot(d, s) != VISION_OK) { d->quarantined = 1; return; }
+    // A timed-out target may still be wedged. Do not touch DMA/accelerator
+    // registers, ACK ownership, reset only the CPU, or reuse DMA buffers.
+    if (s->axi_status & MAILBOX_AXI_QUARANTINED) { d->quarantined = 1; return; }
     (void)rd(d, SOC_AXI_DMA_BASE + DMA_MM2S_DMASR, &s->mm2s_status);
     (void)rd(d, SOC_AXI_DMA_BASE + DMA_S2MM_DMASR, &s->s2mm_status);
     (void)rd(d, SOC_VISION_ACCEL_BASE + VISION_REG_STATUS, &s->accelerator_status);
@@ -140,6 +176,8 @@ static int dispatch(vision_device_t *d, vision_diagnostics_t *s)
     uint64_t start = now(d);
 #define WRITE(base, offset, v) do { if (wr(d, (base)+(offset), (v))) return VISION_IO_ERROR; } while (0)
     if (d->control == VISION_RV32_CONTROL) {
+        if (rd(d, SOC_MAILBOX_BASE + MAILBOX_REG_AXI_STATUS, &status)) return VISION_IO_ERROR;
+        if (status & MAILBOX_AXI_QUARANTINED) { d->quarantined = 1; return VISION_NEEDS_RESET; }
         if (rd(d, SOC_MAILBOX_BASE + MAILBOX_REG_STATUS, &status)) return VISION_IO_ERROR;
         if (status != 0) return VISION_BUSY;
         WRITE(SOC_MAILBOX_BASE, MAILBOX_REG_INPUT_ADDR, d->input.physical);
@@ -166,6 +204,12 @@ static int dispatch(vision_device_t *d, vision_diagnostics_t *s)
     s->stage = VISION_STAGE_WAIT;
     for (s->polls = 0; s->polls < d->poll_limit; ++s->polls) {
         if (d->control == VISION_RV32_CONTROL) {
+            if (rd(d, SOC_MAILBOX_BASE + MAILBOX_REG_AXI_STATUS, &status)) return VISION_IO_ERROR;
+            if (status & MAILBOX_AXI_QUARANTINED) {
+                d->quarantined = 1;
+                (void)mailbox_snapshot(d, s);
+                return VISION_NEEDS_RESET;
+            }
             if (rd(d, SOC_MAILBOX_BASE + MAILBOX_REG_STATUS, &status)) return VISION_IO_ERROR;
             if (status & (MAILBOX_STATUS_DONE | MAILBOX_STATUS_ERROR)) {
                 if (rd(d, SOC_MAILBOX_BASE + MAILBOX_REG_JOB_ID, &result)) return VISION_IO_ERROR;
@@ -247,8 +291,9 @@ int vision_run_image(vision_device_t *d, const uint8_t image[784],
     return VISION_OK;
 failed:
     snapshot(d, &run->diagnostics);
+    if (run->diagnostics.axi_status & MAILBOX_AXI_QUARANTINED) result = VISION_NEEDS_RESET;
     run->diagnostics.result = result;
-    if (d->control == VISION_ARM_CONTROL &&
+    if (!d->quarantined && d->control == VISION_ARM_CONTROL &&
         (result == VISION_JOB_FAILED || result == VISION_DEADLINE)) {
         run->diagnostics.recovery_result = arm_recover(d);
         if (run->diagnostics.recovery_result != VISION_OK) d->quarantined = 1;

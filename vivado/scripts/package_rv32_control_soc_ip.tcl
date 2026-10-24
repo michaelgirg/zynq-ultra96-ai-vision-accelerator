@@ -62,7 +62,7 @@ ipx::package_project -root_dir $subsystem_root -vendor $vendor_name \
 set core [ipx::current_core]
 set_property name rv32_pipeline_axi_subsystem $core
 set_property display_name "RV32IM AXI Control Subsystem" $core
-set_property description "Five-stage RV32IM controller with private caches, one-outstanding AXI4-Lite master, and ARM-loadable instruction/data memory portals." $core
+set_property description "Five-stage RV32IM controller with private caches, one-outstanding AXI4-Lite master, progress watchdog/quarantine, and ARM-loadable instruction/data memory portals." $core
 set_property version 1.0 $core
 set_property supported_families {zynquplus Production} $core
 ipx::infer_bus_interfaces $core
@@ -91,7 +91,7 @@ ipx::package_project -root_dir $mailbox_root -vendor $vendor_name \
 set core [ipx::current_core]
 set_property name rv32_job_mailbox $core
 set_property display_name "RV32/ARM Job Mailbox" $core
-set_property description "AXI4-Lite accelerator-job mailbox with explicit submit, claim, complete/fail, acknowledge, and RV32 reset control." $core
+set_property description "AXI4-Lite job ownership, completion/failure IRQs, 64-bit job timing, first-fault diagnostics, bridge watchdog status, and RV32 reset control." $core
 set_property version 1.0 $core
 set_property supported_families {zynquplus Production} $core
 ipx::infer_bus_interfaces $core
