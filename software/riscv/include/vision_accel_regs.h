@@ -21,6 +21,7 @@
 
 #define VISION_CTRL_START              0x00000001u
 #define VISION_CTRL_CLEAR_DONE         0x00000002u
+#define VISION_CTRL_ABORT              0x00000004u
 #define VISION_STATUS_BUSY             0x00000001u
 #define VISION_STATUS_DONE             0x00000002u
 #define VISION_STATUS_PACKET_ERROR     0x00000004u
@@ -32,3 +33,4 @@
 #define VISION_MODE_VECTOR4            3u
 
 #define VISION_IP_ID_VALUE             0x5A424156u
+#define VISION_IP_VERSION_RECOVERY     0x00020001u

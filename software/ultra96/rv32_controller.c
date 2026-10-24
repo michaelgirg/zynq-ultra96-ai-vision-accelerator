@@ -68,14 +68,16 @@ int rv32_boot_controller(
     size_t dmem_word_count
 )
 {
-    if (imem_word_count > RV32_LOCAL_MEMORY_WORDS ||
+    // Even a rejected replacement image must stop an already-running core.
+    rv32_hold_in_reset(mailbox_base);
+    if (imem_word_count == 0u ||
+        imem_word_count > RV32_LOCAL_MEMORY_WORDS ||
         dmem_word_count > RV32_LOCAL_MEMORY_WORDS ||
         (imem_word_count != 0u && imem_words == NULL) ||
         (dmem_word_count != 0u && dmem_words == NULL)) {
         return RV32_BOOT_BAD_IMAGE;
     }
 
-    rv32_hold_in_reset(mailbox_base);
     rv32_load_memory_words(imem_portal_base, imem_words, imem_word_count);
     rv32_load_memory_words(dmem_portal_base, dmem_words, dmem_word_count);
 

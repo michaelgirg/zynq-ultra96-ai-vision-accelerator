@@ -30,6 +30,8 @@ jobs:
         run: python scripts/validate_vector_classifier.py
       - name: Validate candidate C classifier against PyTorch golden logits
         run: python scripts/validate_vector_classifier.py --model-dir generated/candidates/vector_conv4/classifier
+      - name: Test fail-closed ARM boot helper
+        run: python scripts/validate_rv32_boot.py
 
   pytorch-contracts:
     runs-on: ubuntu-latest

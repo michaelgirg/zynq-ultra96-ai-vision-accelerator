@@ -625,7 +625,7 @@ module axis_preprocess_vector_axi_lite_tb #(
             $error("IP_ID mismatch: actual=0x%08h", read_value);
         end
         axi_read(ADDR_IP_VERSION, read_value);
-        if (read_value !== 32'h0002_0000) begin
+        if (read_value !== 32'h0002_0001) begin
             mismatch_count++;
             $error("IP_VERSION mismatch: actual=0x%08h", read_value);
         end

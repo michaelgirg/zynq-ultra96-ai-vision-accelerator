@@ -18,11 +18,13 @@ SECTIONS
     {
         KEEP(*(.init))
         *(.text .text.*)
-        *(.rodata .rodata.*)
     } > IMEM
 
     .data : ALIGN(4)
     {
+        /* Harvard core: loads access DMEM, including read-only constants. */
+        *(.rodata .rodata.*)
+        *(.srodata .srodata.*)
         __global_pointer$ = . + 0x800;
         *(.sdata .sdata.*)
         *(.data .data.*)

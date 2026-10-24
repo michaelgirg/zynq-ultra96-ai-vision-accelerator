@@ -99,7 +99,7 @@ module axis_preprocess_vector_axi_lite #(
     localparam logic [C_S_AXI_ADDR_WIDTH-1:0] ADDR_PERF_CONTROL       = 8'h98;
 
     localparam logic [31:0] IP_ID_VALUE = 32'h5a42_4156; // "ZBAV"
-    localparam logic [31:0] IP_VERSION_VALUE = 32'h0002_0000;
+    localparam logic [31:0] IP_VERSION_VALUE = 32'h0002_0001;
     localparam logic [31:0] CAPABILITIES_VALUE = 32'h000f_044f;
 
     localparam logic [1:0] MODE_THRESHOLD = 2'd0;
@@ -166,6 +166,8 @@ module axis_preprocess_vector_axi_lite #(
     logic [CYCLE_COUNT_WIDTH-1:0]              processing_cycles_latched_r;
     logic                                      start_pulse;
     logic                                      clear_done_pulse;
+    logic                                      abort_pulse;
+    logic                                      datapath_resetn;
     logic                                      stream_busy;
     logic                                      vector_commit_pulse;
     logic                                      perf_clear_pulse;
@@ -262,11 +264,18 @@ module axis_preprocess_vector_axi_lite #(
 
     assign start_pulse =
         reg_write_en && reg_write_strb[0] &&
-        (reg_write_addr == ADDR_CTRL) && reg_write_data[0] && !stream_busy;
+        (reg_write_addr == ADDR_CTRL) && reg_write_data[0] &&
+        !reg_write_data[2] && !stream_busy;
 
     assign clear_done_pulse =
         reg_write_en && reg_write_strb[0] &&
         (reg_write_addr == ADDR_CTRL) && reg_write_data[1];
+
+    // Reset only streaming state. Keep AXI responses, coefficients and sticky
+    // diagnostic history alive so software can recover without a PL reset.
+    assign abort_pulse = reg_write_en && reg_write_strb[0] &&
+        (reg_write_addr == ADDR_CTRL) && reg_write_data[2];
+    assign datapath_resetn = S_AXI_ARESETN && !abort_pulse;
 
     assign stream_busy = armed_r;
     assign vector_commit_pulse =
@@ -662,7 +671,7 @@ module axis_preprocess_vector_axi_lite #(
         .CYCLE_COUNT_WIDTH(CYCLE_COUNT_WIDTH)
     ) threshold_path (
         .aclk(S_AXI_ACLK),
-        .aresetn(S_AXI_ARESETN),
+        .aresetn(datapath_resetn),
         .threshold(active_threshold_r),
         .clear_done(threshold_clear_done),
         .busy(threshold_busy),
@@ -690,7 +699,7 @@ module axis_preprocess_vector_axi_lite #(
         .CYCLE_COUNT_WIDTH(CYCLE_COUNT_WIDTH)
     ) sobel_path (
         .aclk(S_AXI_ACLK),
-        .aresetn(S_AXI_ARESETN),
+        .aresetn(datapath_resetn),
         .clear_done(sobel_clear_done),
         .busy(sobel_busy),
         .done(sobel_done),
@@ -717,7 +726,7 @@ module axis_preprocess_vector_axi_lite #(
         .CYCLE_COUNT_WIDTH(CYCLE_COUNT_WIDTH)
     ) conv_path (
         .aclk(S_AXI_ACLK),
-        .aresetn(S_AXI_ARESETN),
+        .aresetn(datapath_resetn),
         .conv_k00(active_conv_k00_r),
         .conv_k01(active_conv_k01_r),
         .conv_k02(active_conv_k02_r),
@@ -758,7 +767,7 @@ module axis_preprocess_vector_axi_lite #(
         .CYCLE_COUNT_WIDTH(CYCLE_COUNT_WIDTH)
     ) vector_path (
         .aclk(S_AXI_ACLK),
-        .aresetn(S_AXI_ARESETN),
+        .aresetn(datapath_resetn),
         .conv_weights(active_vector_weights_r),
         .conv_bias(active_vector_bias_r),
         .conv_shift(active_vector_shift_r),
@@ -996,6 +1005,13 @@ module axis_preprocess_vector_axi_lite #(
                 done_latched_r <= 1'b1;
                 packet_error_latched_r <= vector_packet_error;
                 processing_cycles_latched_r <= vector_cycles;
+            end
+
+            if (abort_pulse) begin
+                armed_r <= 1'b0;
+                done_latched_r <= 1'b0;
+                packet_error_latched_r <= 1'b0;
+                processing_cycles_latched_r <= '0;
             end
 
             if (vector_commit_pulse) begin

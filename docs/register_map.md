@@ -21,7 +21,7 @@ counters, and interrupts occupy previously unused space beginning at `0x70`.
 
 | Offset | Name | Access | Reset | Description |
 | ---: | --- | :---: | ---: | --- |
-| `0x00` | `CTRL` | WO | `0` | bit 0 start pulse; bit 1 clear legacy done/error latch |
+| `0x00` | `CTRL` | WO | `0` | bit 0 start; bit 1 clear legacy done/error; bit 2 abort/flush frame |
 | `0x04` | `STATUS` | RO | `0` | bit 0 busy; bit 1 done; bit 2 packet error; bit 3 armed |
 | `0x08` | `THRESHOLD` | RW | `128` | unsigned threshold in bits `[7:0]` |
 | `0x0C` | `IMAGE_PIXELS` | RO | `784` | compile-time frame pixel count |
@@ -38,7 +38,7 @@ counters, and interrupts occupy previously unused space beginning at `0x70`.
 | `0x68` | `VECTOR_CFG_COMMIT` | WO | `0` | bit 0 atomically commits all shadow entries while idle |
 | `0x6C` | `VECTOR_CFG_VERSION` | RO | `0` | increments after each accepted commit |
 | `0x70` | `IP_ID` | RO | `0x5A424156` | ASCII `ZBAV` |
-| `0x74` | `IP_VERSION` | RO | `0x00020000` | major 2, minor 0, patch 0 |
+| `0x74` | `IP_VERSION` | RO | `0x00020001` | major 2, minor 0, patch 1 (recoverable frame abort) |
 | `0x78` | `CAPABILITIES` | RO | `0x000F044F` | implemented features, decoded below |
 | `0x7C` | `FRAME_COUNT` | RO | `0` | saturating completed-frame count |
 | `0x80` | `ERROR_COUNT` | RO | `0` | saturating packet/rejected-access event count |
@@ -52,6 +52,15 @@ counters, and interrupts occupy previously unused space beginning at `0x70`.
 Frame dimensions remain compile-time parameters in v2. Runtime width/height
 registers are intentionally deferred because every current line buffer is sized
 for a fixed frame geometry.
+
+`CTRL.abort` is legal while busy and flushes all four streaming paths, including
+partial-frame counters, FIFOs and line-buffer validity. It clears armed/done/
+legacy packet-error state, but preserves coefficient banks, configuration
+version, AXI responses and sticky diagnostic history. Stop/reset DMA before
+reusing the stream. An abort explicitly cancels any stalled stream beat; it is
+not normal completion. Write abort alone (not combined with start). Older
+`0x00020000` bitstreams do not implement abort; the recovery-aware firmware
+rejects those versions rather than assuming it exists.
 
 ## Indirect vector configuration
 
