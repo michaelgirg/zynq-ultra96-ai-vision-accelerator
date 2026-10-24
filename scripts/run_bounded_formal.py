@@ -58,13 +58,28 @@ def main() -> None:
     (args.output / "mutation.log").write_text(negative.stdout + negative.stderr)
     if negative.returncode == 0 or "proof did fail" not in negative.stdout + negative.stderr:
         raise SystemExit("formal harness did not detect the intentional write-data defect")
+    # Removing quarantine must also fail, independently of payload checking.
+    target = "(state == AXI_IDLE) && !quarantined && !processor_reset"
+    if source.count(target) != 1:
+        raise SystemExit("quarantine mutation target changed")
+    quarantine_mutant = args.output.resolve() / "quarantine_mutant.sv"
+    quarantine_mutant.write_text(source.replace(target, "(state == AXI_IDLE) && !processor_reset"))
+    quarantine_commands = commands.replace(prefix + "rtl/riscv/soc/rv32_axi_lite_master.sv",
+        prefix + quarantine_mutant.relative_to(ROOT).as_posix())
+    negative_quarantine = subprocess.run([executable, "-p", quarantine_commands], cwd=ROOT, env=env,
+        capture_output=True, text=True, timeout=120)
+    (args.output / "quarantine_mutation.log").write_text(negative_quarantine.stdout + negative_quarantine.stderr)
+    if negative_quarantine.returncode == 0 or "proof did fail" not in negative_quarantine.stdout + negative_quarantine.stderr:
+        raise SystemExit("formal harness did not detect the intentional quarantine defect")
     version = subprocess.check_output([executable, "-V"], cwd=ROOT, env=env, text=True).strip()
     report = {"engine": version, "mode": "bounded-safety", "depth_cycles": args.depth,
               "result": "PASS", "top": "rv32_axi_master_harness",
-              "scope": "AXI request payload, stalled channel stability, one-outstanding ownership and response mapping",
+              "scope": "AXI payload/stall stability, one-outstanding ownership, timeout threshold/capture, quarantine, CPU-reset drain and response mapping",
+              "watchdog_cycles_in_harness": 4, "watchdog_cycles_production_default": 1000000,
               "assumptions": ["reset asserted at initial step"],
               "unbounded_proof": False, "liveness_proven": False,
               "intentional_write_data_mutation_detected": True,
+              "intentional_quarantine_mutation_detected": True,
               "source_sha256_lf": {str(p.relative_to(ROOT)).replace("\\", "/"):
                   hashlib.sha256(p.read_bytes().replace(b"\r\n", b"\n")).hexdigest()
                   for p in (source_path, ROOT / "verif/formal/rv32_axi_master_harness.sv")}}

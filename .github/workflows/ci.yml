@@ -76,6 +76,8 @@ jobs:
         run: verilator --lint-only --sv --timing --Wall --Wno-fatal --top-module axis_preprocess_vector_cdc -f scripts/rtl_filelist.f
       - name: Lint RV32 heterogeneous subsystem
         run: verilator --lint-only --sv --timing --Wall --Wno-fatal --top-module rv32_pipeline_axi_subsystem -f scripts/rtl_rv32_filelist.f
+      - name: Lint job mailbox and diagnostics
+        run: verilator --lint-only --sv --timing --Wall --Wno-fatal --top-module rv32_job_mailbox rtl/riscv/soc/rv32_job_mailbox.sv
 
   rv32-firmware:
     runs-on: ubuntu-latest

@@ -1,7 +1,7 @@
 # Production-V2 Release Status
 
 These are preserved checkpoint results. Later `0x00020001` frame-abort and
-RV32 operand-retention source changes have local simulation checks but require
+RV32 operand-retention and mailbox/watchdog source changes have local simulation checks but require
 a user-run Vivado rebuild. Timing/resource and licensed-UVM evidence here must
 not be attributed to that newer RTL revision.
 

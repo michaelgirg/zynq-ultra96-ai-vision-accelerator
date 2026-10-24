@@ -6,6 +6,10 @@ buffer ownership, diagnostics and three-path benchmark. Run
 `python scripts/validate_vision_app.py` after building the RV32 images; use
 `--cc cl` in an MSVC shell. All native performance records are explicitly
 marked as functional-model measurements, not board results.
+The complete runtime requires the versioned mailbox diagnostics extension and
+retains job timing/first-fault telemetry. On AXI quarantine it avoids reading the
+stalled target. See the [reset/interrupt contract](../../docs/job_diagnostics.md);
+CPU reset alone is not a safe hot-reload/recovery operation during pending MMIO.
 
 ## Four-filter classifier
 

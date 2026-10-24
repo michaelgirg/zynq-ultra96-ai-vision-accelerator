@@ -9,7 +9,7 @@ the saved model files or synthesizable RTL.
 
 | Layer | Evidence |
 | --- | --- |
-| Native functional backend | 98 runtime checks per model; 16 image/model combinations, 96 modeled DMA frames and 144 benchmark rows including software references |
+| Native functional backend | 110 runtime checks per model; 16 image/model combinations, 96 modeled DMA frames and 144 benchmark rows including software references |
 | RTL capture replay | The same application consumes baseline/candidate feature frames captured by the real Questa SoC test |
 | Cortex-A53 adapter/demo | Six AArch64 objects compiled with strict warnings against installed Vitis 2025.2 standalone-v9.4 headers |
 | Benchmark guards | Ten unit tests; reject model/timer/sample/prediction mismatches, failed runs and fabricated model-speedup comparisons |
@@ -38,7 +38,8 @@ to the portable application, but is not live C-to-RTL co-simulation.
 ## Ownership and recovery
 
 The application requires exclusive ownership of the mailbox, accelerator and
-DMA. It validates IDs, minimum version `0x00020001`, frame size and mode support;
+DMA. It validates IDs, accelerator minimum version `0x00020001`, mailbox extension
+version `0x00010000`, frame size and mode support;
 loads/readbacks firmware while RV32 is held reset; verifies all 44 model words;
 and checks the vector commit version. RV32-controlled mode releases the core;
 direct ARM-controlled mode keeps it reset.
@@ -59,9 +60,19 @@ or failed reset quarantines the device: no classification, output invalidate,
 new submission or buffer reuse is permitted until platform reset/reinitialization.
 Do not ACK a still-running job to pretend it has been cancelled.
 
+The [mailbox diagnostics](job_diagnostics.md) expose control-clock job timing,
+first-fault records and live AXI quarantine. The runtime captures these before
+ACK and, on bridge quarantine, reads only the mailbox: it must not revisit the
+potentially hung DMA/accelerator target. Native models leave hardware cycle
+measurements at zero. The demo remains polling-based, not interrupt-driven.
+
 A timer cannot protect a CPU stalled inside an MMIO access. The Vitis backend
 uses direct device accesses; a nonresponding AXI slave still requires external
-watchdog/reset intervention. No bounded AXI-response guarantee is claimed.
+watchdog/reset intervention. The new watchdog monitors RV32 master progress,
+not ARM accesses; it preserves the pending transaction and requires coordinated
+fabric reset after quarantine. No bounded AXI-response guarantee is claimed.
+Firmware hot-reload with CPU reset alone is unsafe during pending MMIO, including
+an idle controller's status polling. Restart the platform coherently instead.
 
 ## Local commands
 

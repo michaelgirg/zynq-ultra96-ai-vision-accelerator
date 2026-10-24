@@ -1,5 +1,7 @@
 # Documentation guide
 
+- [Job IRQ, timing and AXI watchdog](job_diagnostics.md): register extension,
+  first-fault evidence, safe drain/quarantine and CPU/system-reset boundaries.
 - [Complete Ultra96 application and benchmark](ultra96_application.md): native
   functional backend, RTL capture replay, A53 adapter, diagnostics and limits.
 - [Executed bounded formal check](bounded_formal.md): real AXI-master safety,

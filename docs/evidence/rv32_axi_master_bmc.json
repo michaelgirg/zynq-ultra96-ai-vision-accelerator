@@ -4,15 +4,18 @@
   "depth_cycles": 32,
   "result": "PASS",
   "top": "rv32_axi_master_harness",
-  "scope": "AXI request payload, stalled channel stability, one-outstanding ownership and response mapping",
+  "scope": "AXI payload/stall stability, one-outstanding ownership, timeout threshold/capture, quarantine, CPU-reset drain and response mapping",
+  "watchdog_cycles_in_harness": 4,
+  "watchdog_cycles_production_default": 1000000,
   "assumptions": [
     "reset asserted at initial step"
   ],
   "unbounded_proof": false,
   "liveness_proven": false,
   "intentional_write_data_mutation_detected": true,
+  "intentional_quarantine_mutation_detected": true,
   "source_sha256_lf": {
-    "rtl/riscv/soc/rv32_axi_lite_master.sv": "70635458cef039a8ae17dd4ba0d78811697cc9e003d011e867b8fdbbeea6625e",
-    "verif/formal/rv32_axi_master_harness.sv": "2724d2ccaa9aa3cfee51709d7922789f77705954510903d7c763b87452ba8a6b"
+    "rtl/riscv/soc/rv32_axi_lite_master.sv": "acdba57c7b9122e570e956fec4a994f816f5c9bc94d2223c6a3d80334992095e",
+    "verif/formal/rv32_axi_master_harness.sv": "42318794759ee5d97d3a49abd84c105bfed1668e80f19ef198bda0e8c75eeabd"
   }
 }

@@ -50,6 +50,10 @@ Checks include full TKEEP, exact beat count, final-beat TLAST, buffer guards,
 mailbox result/error/job ID, ACK-to-idle and CPU faults. Invalid descriptors and
 quarantined jobs may not start DMA. Recoverable faults are followed by a full
 frame without resetting the CPU; candidate coefficients must survive recovery.
+Every job additionally checks its level IRQ/cause, submit/claim/end timestamp
+ordering, exact end-minus-submit duration, cumulative completion/failure counts
+and IRQ deassertion on ACK. Bridge timeout/drain and independent mailbox fault
+access are tested separately in the focused [watchdog suite](job_diagnostics.md).
 
 Descriptors must use exactly `IMAGE_PIXELS * 4` bytes, supported modes and a
 threshold <=255. Buffers must be word aligned, non-overlapping and contained
@@ -91,15 +95,18 @@ PyTorch is not required. Logs/captures remain in ignored
 `generated/experiments/soc-e2e/`. Run simulations sequentially on a single-session
 Starter license. The runner uses a **test-only** 1,024-poll firmware deadline;
 normal builds retain 1,000,000 polls. Source/control flow are identical. Neither
-limit is a calibrated wall-clock timeout. A nonresponding AXI-Lite slave can
-still stall the CPU; the behavioral fabric always responds.
+limit is a calibrated wall-clock timeout. The separate hardware progress
+watchdog can detect a nonresponding RV32 target but does not manufacture a
+response or guarantee CPU progress; the behavioral fabric in this full-frame
+suite always responds.
 
 ## Implementation boundary
 
-Frame abort and operand retention change synthesizable RTL. Current discovery
+Frame abort, operand retention and mailbox/watchdog changes affect synthesizable RTL. Current accelerator discovery
 is `0x00020001`; preserved routed bitstream/XSA and timing/resource numbers are
 the earlier `0x00020000` checkpoint. New firmware rejects that older version.
 A user-run Vivado rebuild is required before deploying recovery-aware firmware.
+The complete application also requires the new mailbox version `0x00010000`.
 Existing licensed UVM results remain baseline evidence; the version-expectation
 update is locally compiled, with licensed rerun separate. This simulation does
 not establish updated timing or physical-board operation.

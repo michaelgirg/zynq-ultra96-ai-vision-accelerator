@@ -11,6 +11,10 @@ from check_soc_coverage import check as check_coverage
 ROOT = Path(__file__).resolve().parents[1]
 SOURCES = (
     "rtl/riscv/pipeline/core_pipeline.sv",
+    "rtl/riscv/soc/rv32_axi_lite_master.sv",
+    "rtl/riscv/soc/rv32_job_mailbox.sv",
+    "rtl/riscv/soc/rv32_pipeline_axi_top.sv",
+    "rtl/riscv/soc/rv32_pipeline_axi_subsystem.sv",
     "rtl/axis_preprocess_vector_axi_lite.sv",
     "rtl/axis_preprocess_vector_cdc.sv",
     "software/riscv/src/main.c", "software/riscv/linker.ld",
@@ -55,6 +59,7 @@ def main() -> None:
     report = {"schema": 1, "simulator": "Questa Intel Starter FPGA Edition 2021.2",
               "control_clock_mhz": 100, "test_poll_limit": 1024,
               "production_poll_limit": 1000000, "ip_version": "0x00020001",
+              "job_irq_timestamps_counters_checked_for_every_job": True,
               "scope": "real RV32/portals/mailbox/CDC/accelerator RTL; behavioral fabric/DMA/DDR; native host C",
               "vivado_rebuilt": False, "physical_board_execution": False,
               "totals": {"jobs": sum(c["jobs"] for c in clocks),

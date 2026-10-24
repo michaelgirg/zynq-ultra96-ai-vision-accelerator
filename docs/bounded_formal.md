@@ -2,14 +2,17 @@
 
 The real `rv32_axi_lite_master` passed Yosys SAT safety checking for 32 steps.
 The [evidence record](evidence/rv32_axi_master_bmc.json) binds the engine version,
-RTL and harness hashes. An intentional write-data corruption in an ignored
-derived copy was detected within an 8-step check, confirming harness sensitivity.
+RTL and harness hashes. Intentional write-data corruption and removal of
+quarantine gating in ignored derived copies are detected, confirming sensitivity.
 The original RTL is never modified by that test.
 
 Properties cover request address/data/strobes, stalled AW/W/AR payload stability,
 single-outstanding ownership, processor-response stability and read/write error
-mapping. Initial reset is assumed; subsequent requests, response values, slave
-delays, backpressure and resets are unconstrained. No fairness is assumed.
+mapping. The harness uses a four-cycle watchdog threshold (production default:
+1,000,000), checks exact expiry/channel capture, sticky fault records, quarantine,
+late-response faults and CPU-reset drain. Initial fabric reset is assumed;
+subsequent requests, response values, slave delays, backpressure, processor reset
+and fabric reset are unconstrained. No fairness is assumed.
 
 This is **bounded safety evidence**, not an unbounded proof, liveness proof,
 whole-SoC formal signoff or physical CDC/metastability analysis. The `SYNTHESIS`
