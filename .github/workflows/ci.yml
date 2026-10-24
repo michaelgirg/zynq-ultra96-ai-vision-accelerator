@@ -22,6 +22,10 @@ jobs:
         run: python scripts/check_repo_consistency.py
       - name: Validate vector predictor
         run: python scripts/validate_vector_predictor.py
+      - name: Verify checkpoint, coefficients, classifier, and evaluation pairing
+        run: python scripts/check_vector_model_bundle.py
+      - name: Reject mixed artifacts and test-set candidate selection
+        run: python -m unittest discover -s scripts -p test_vector_bundle.py
       - name: Validate portable C classifier against PyTorch golden logits
         run: python scripts/validate_vector_classifier.py
       - name: Validate candidate C classifier against PyTorch golden logits
@@ -39,10 +43,22 @@ jobs:
         run: pip install -r requirements.txt --index-url https://download.pytorch.org/whl/cpu
       - name: Validate split isolation, metrics, packing, and classifier scale folding
         run: python -m unittest discover -s pytorch -p test_vector_training.py
+      - name: Re-derive frozen baseline and candidate exports
+        run: |
+          python pytorch/export_vector_classifier.py --check-only
+          python pytorch/export_vector_classifier.py --check-only --checkpoint generated/candidates/vector_conv4/vector_conv4_cnn.pt --front-manifest generated/candidates/vector_conv4/evaluation/front_manifest.json --output-dir generated/candidates/vector_conv4/classifier
       - name: Re-export baseline classifier from the saved PyTorch checkpoint
         run: python pytorch/export_vector_classifier.py --output-dir generated/experiments/ci-classifier
       - name: Compare re-exported C classifier with PyTorch
         run: python scripts/validate_vector_classifier.py --model-dir generated/experiments/ci-classifier
+      - uses: actions/cache@v4
+        with:
+          path: generated/data
+          key: mnist-official-idx-v1
+      - name: Download official MNIST test data
+        run: python -c "from torchvision.datasets import MNIST; MNIST('generated/data', train=False, download=True)"
+      - name: Validate all 10000 test images through native C classifier
+        run: python pytorch/validate_vector_dataset.py --output generated/experiments/ci-c-dataset.json
 
   rtl-lint:
     runs-on: ubuntu-latest

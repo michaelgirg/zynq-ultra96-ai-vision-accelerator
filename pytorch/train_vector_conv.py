@@ -15,6 +15,7 @@ from torch.utils.data import DataLoader, Subset
 from torchvision import datasets, transforms
 
 from vector_conv_model import VECTOR_FILTERS, VectorConvClassifier
+from evaluate_vector_conv import evaluate as evaluate_fixed, prepare_front
 
 
 def split_indices(count: int, validation_size: int, seed: int) -> tuple[list[int], list[int]]:
@@ -22,6 +23,14 @@ def split_indices(count: int, validation_size: int, seed: int) -> tuple[list[int
         raise ValueError("validation size must be between zero and dataset size")
     indices = torch.randperm(count, generator=torch.Generator().manual_seed(seed)).tolist()
     return indices[validation_size:], indices[:validation_size]
+
+
+def selection_key(validation: dict, fixed_validation: dict | None, metric: str) -> tuple[float, float]:
+    if metric == "fixed-features":
+        if fixed_validation is None:
+            raise ValueError("quantized validation metrics are required")
+        return fixed_validation["fixed_feature_accuracy"], -fixed_validation["fixed_feature_loss"]
+    return validation["accuracy"], -validation["loss"]
 
 
 def evaluate(model: nn.Module, loader: DataLoader, device: torch.device) -> dict:
@@ -59,6 +68,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--translation", type=float, default=0.08)
     parser.add_argument("--device", choices=("auto", "cpu", "cuda"), default="auto")
     parser.add_argument("--threads", type=int, default=4)
+    parser.add_argument("--selection-metric", choices=("fixed-features", "float"), default="fixed-features")
+    parser.add_argument("--calibration-samples", type=int, default=2048)
     parser.add_argument("--download", action="store_true")
     parser.add_argument("--evaluate-test", action="store_true", help="Evaluate the selected checkpoint once; never used for selection")
     parser.add_argument("--overwrite", action="store_true")
@@ -67,7 +78,7 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    if args.epochs < 1 or args.batch_size < 1 or args.threads < 1 or args.lr <= 0:
+    if args.epochs < 1 or args.batch_size < 1 or args.threads < 1 or args.lr <= 0 or args.calibration_samples < 1:
         raise ValueError("epochs, batch size, threads, and learning rate must be positive")
     if not 0 <= args.rotation <= 30 or not 0 <= args.translation <= 0.25 or args.weight_decay < 0:
         raise ValueError("augmentation or weight decay is outside the supported range")
@@ -98,6 +109,8 @@ def main() -> None:
     best_key = (-1.0, float("-inf"))
     best_state = None
     best_epoch = 0
+    best_fixed_validation = None
+    best_front = None
     history = []
     for epoch in range(1, args.epochs + 1):
         model.train()
@@ -109,15 +122,22 @@ def main() -> None:
             optimizer.step()
             loss_sum += loss.item() * labels.numel()
         validation = evaluate(model, validation_loader, device)
+        fixed_validation = None
+        if args.selection_metric == "fixed-features":
+            front = prepare_front(model, {"validation_indices": validation_indices}, validation_set, args.calibration_samples)
+            fixed_validation = evaluate_fixed(model, validation_loader, front, "clean")
         history.append({"epoch": epoch, "train_loss": loss_sum / len(train_indices),
                         "validation_accuracy": validation["accuracy"], "validation_loss": validation["loss"],
+                        "fixed_feature_validation": fixed_validation,
                         "learning_rate": optimizer.param_groups[0]["lr"]})
-        key = (validation["accuracy"], -validation["loss"])
+        key = selection_key(validation, fixed_validation, args.selection_metric)
         if key > best_key:
             best_key, best_epoch = key, epoch
             best_state = {name: value.detach().cpu().clone() for name, value in model.state_dict().items()}
+            best_fixed_validation = fixed_validation
+            best_front = front if args.selection_metric == "fixed-features" else None
         scheduler.step()
-        print(f"epoch={epoch} train_loss={history[-1]['train_loss']:.4f} validation_accuracy={validation['accuracy']:.4f}", flush=True)
+        print(f"epoch={epoch} train_loss={history[-1]['train_loss']:.4f} float_validation={validation['accuracy']:.4f} selection_accuracy={key[0]:.4f}", flush=True)
     model.load_state_dict(best_state)
     args.output_dir.mkdir(parents=True, exist_ok=True)
     split_digest = hashlib.sha256(json.dumps(validation_indices).encode()).hexdigest()
@@ -125,9 +145,12 @@ def main() -> None:
         "model_state": best_state, "filters": VECTOR_FILTERS, "image_shape": [28, 28],
         "epochs": args.epochs, "selected_epoch": best_epoch, "seed": args.seed,
         "split_seed": args.split_seed, "validation_indices": validation_indices,
-        "selection": "highest validation accuracy, then lowest validation loss",
+        "selection": f"highest {args.selection_metric} validation accuracy, then lowest corresponding loss",
+        "front_manifest": best_front,
     }
     torch.save(checkpoint, checkpoint_path)
+    if best_front is not None:
+        (args.output_dir / "front_manifest.json").write_text(json.dumps(best_front, indent=2) + "\n", encoding="utf-8")
     metrics = {
         "checkpoint": checkpoint_path.name, "filters": VECTOR_FILTERS, "seed": args.seed,
         "torch_version": str(torch.__version__), "device": device.type, "selected_epoch": best_epoch,
@@ -138,6 +161,8 @@ def main() -> None:
         "split_seed": args.split_seed, "validation_indices_sha256": split_digest,
         "augmentation": {"rotation_degrees": args.rotation, "translation_fraction": args.translation},
         "selection": checkpoint["selection"], "history": history,
+        "fixed_feature_validation": best_fixed_validation,
+        "calibration_samples": args.calibration_samples,
         "validation": evaluate(model, validation_loader, device),
     }
     if args.evaluate_test:
@@ -145,7 +170,7 @@ def main() -> None:
         metrics["test"] = evaluate(model, DataLoader(test_set, batch_size=args.batch_size), device)
     metrics["checkpoint_sha256"] = hashlib.sha256(checkpoint_path.read_bytes()).hexdigest()
     (args.output_dir / "metrics_vector_conv4.json").write_text(json.dumps(metrics, indent=2) + "\n", encoding="utf-8")
-    print(f"selected_epoch={best_epoch} validation_accuracy={best_key[0]:.4f}; saved {checkpoint_path}", flush=True)
+    print(f"selected_epoch={best_epoch} selection_accuracy={best_key[0]:.4f}; saved {checkpoint_path}", flush=True)
 
 
 if __name__ == "__main__":

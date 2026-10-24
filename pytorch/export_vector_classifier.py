@@ -6,6 +6,7 @@ import argparse
 import hashlib
 import json
 import random
+import tempfile
 from pathlib import Path
 
 import torch
@@ -60,6 +61,7 @@ def main() -> None:
     parser.add_argument("--front-manifest", type=Path, default=Path("generated/test_vectors/vector_conv4_manifest.json"))
     parser.add_argument("--output-dir", type=Path, default=Path("generated/classifier"))
     parser.add_argument("--input-vector-dir", type=Path, default=Path("generated/test_vectors"))
+    parser.add_argument("--check-only", action="store_true", help="Re-derive saved exports from checkpoint without rewriting them")
     args = parser.parse_args()
     torch.set_num_threads(2)
     checkpoint = torch.load(args.checkpoint, map_location="cpu", weights_only=True)
@@ -79,6 +81,27 @@ def main() -> None:
         raise ValueError("front-end shifts must be four values in 0..31")
     if manifest["relu_enable"] != [1, 1, 1, 1] or not torch.allclose(scales, expected_scales, rtol=1e-6, atol=0):
         raise ValueError("front-end activation/scaling contract does not match classifier")
+    if args.check_only:
+        metadata = json.loads((args.output_dir / "manifest.json").read_text(encoding="utf-8"))
+        if (metadata["checkpoint_sha256"] != hashlib.sha256(args.checkpoint.read_bytes()).hexdigest() or
+                metadata["front_manifest_sha256"] != text_hash(args.front_manifest)):
+            raise ValueError("saved export refers to different checkpoint/front-end")
+        if (args.output_dir / "vector_classifier_weights.h").read_text(encoding="utf-8") != render_weights(model, scales):
+            raise ValueError("saved classifier weights differ from checkpoint-derived weights")
+        with tempfile.TemporaryDirectory(prefix="vector-front-") as temporary:
+            derived = Path(temporary) / "front.h"
+            write_header(derived, weights, biases, shifts, scales)
+            if text_hash(derived) != text_hash(args.output_dir / "vector_front_config.h"):
+                raise ValueError("saved front-end header differs from checkpoint-derived coefficients")
+        expected_words = []
+        for channel in range(4):
+            expected_words.extend(int(value) & 0xFFFFFFFF for value in weights[channel].reshape(-1).tolist())
+            expected_words.extend([int(biases[channel]) & 0xFFFFFFFF, 0x100 | int(shifts[channel])])
+        actual_words = [int(word, 16) for word in (args.output_dir / "vector_front_config.mem").read_text().split()]
+        if actual_words != expected_words:
+            raise ValueError("saved front-end memory differs from checkpoint-derived coefficients")
+        print(f"PASS: exports in {args.output_dir} re-derived exactly from checkpoint and front-end manifest")
+        return
     args.output_dir.mkdir(parents=True, exist_ok=True)
     header = args.output_dir / "vector_classifier_weights.h"
     header.write_text(render_weights(model, scales), encoding="utf-8")

@@ -6,7 +6,7 @@ import torch
 from torch.utils.data import DataLoader, TensorDataset
 
 from export_vector_classifier import unpack_words
-from train_vector_conv import evaluate, split_indices
+from train_vector_conv import evaluate, selection_key, split_indices
 from vector_conv_model import VectorConvClassifier
 
 
@@ -22,6 +22,20 @@ class VectorTrainingTests(unittest.TestCase):
         for size in (0, 100, 101):
             with self.assertRaises(ValueError):
                 split_indices(100, size, 0)
+
+    def test_selection_prefers_deployment_accuracy_over_float_accuracy(self):
+        first = selection_key({"accuracy": 0.99, "loss": 0.1},
+                              {"fixed_feature_accuracy": 0.95, "fixed_feature_loss": 0.2}, "fixed-features")
+        second = selection_key({"accuracy": 0.98, "loss": 0.2},
+                               {"fixed_feature_accuracy": 0.97, "fixed_feature_loss": 0.3}, "fixed-features")
+        self.assertGreater(second, first)
+        with self.assertRaises(ValueError):
+            selection_key({"accuracy": 0.99, "loss": 0.1}, None, "fixed-features")
+
+    def test_quantized_selection_breaks_ties_on_quantized_loss(self):
+        first = selection_key({}, {"fixed_feature_accuracy": 0.97, "fixed_feature_loss": 0.1}, "fixed-features")
+        second = selection_key({}, {"fixed_feature_accuracy": 0.97, "fixed_feature_loss": 0.2}, "fixed-features")
+        self.assertGreater(first, second)
 
     def test_evaluation_counts_batches_and_classes(self):
         model = torch.nn.Identity()

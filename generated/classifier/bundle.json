@@ -1,0 +1,150 @@
+{
+  "schema_version": 1,
+  "text_hash_policy": "SHA256 after CRLF-to-LF normalization; checkpoints are byte-exact",
+  "files": {
+    "checkpoint": {
+      "path": "generated/model/vector_conv4_cnn.pt",
+      "sha256": "4d68fb0cbcbf0c903a7dfd742d06085a08e35a1aec532d37e51086cb4bc2fbc4"
+    },
+    "front_manifest": {
+      "path": "generated/test_vectors/vector_conv4_manifest.json",
+      "sha256": "c06d681c9e53b8cb642c635d9cbee134b5ca62b2112a7d29b0988f9d5ef1ea3e"
+    },
+    "classifier_manifest": {
+      "path": "generated/classifier/manifest.json",
+      "sha256": "63f31ec37cb3077d91413cefeb6590f1d5b594f4bb46210ed5cc003b8cf2c741"
+    },
+    "classifier_weights": {
+      "path": "generated/classifier/vector_classifier_weights.h",
+      "sha256": "4ed8821d27fb9d5efb9c1e285386b1fd74b8eae3af3904f7787b620539da6bb0"
+    },
+    "front_config_header": {
+      "path": "generated/classifier/vector_front_config.h",
+      "sha256": "10cc0141e071f5a3390f23037a84d8be7b117df71330a047e204f1142a62ee1a"
+    },
+    "front_config_mem": {
+      "path": "generated/classifier/vector_front_config.mem",
+      "sha256": "8d7f73fd037348545154adc43eb4d01718fb5c196e00f7986bd66e3c5d4c4d71"
+    },
+    "c_source": {
+      "path": "software/ultra96/vector_classifier.c",
+      "sha256": "8e0dce2a74aa0bafb62bf69bb15feec3fa90b22cb6607dcbfbd4659018746bf2"
+    },
+    "c_harness": {
+      "path": "software/ultra96/test_vector_classifier.c",
+      "sha256": "582e11de3c09fa522c1b5f078fdaea19ebde85824888ae6df6214ebd8e369b2a"
+    },
+    "c_header": {
+      "path": "software/ultra96/vector_classifier.h",
+      "sha256": "953c70df2b8b5157a7e289244a72df566e8e336792c96880e8fb8db67c21af50"
+    },
+    "sample_sample_000": {
+      "path": "generated/classifier/sample_000.mem",
+      "sha256": "4fe9f3dc43e8e829916931aee39090cc444654b24a57e260b3f4fb2af9395efb"
+    },
+    "sample_sample_001": {
+      "path": "generated/classifier/sample_001.mem",
+      "sha256": "a49e21e5f550fffc149cc4f09b0b1381525c60e9584ef922ab512a139e23000c"
+    },
+    "sample_sample_002": {
+      "path": "generated/classifier/sample_002.mem",
+      "sha256": "bb0e744aa2f04547f2fdb21b97585752cf12fd958327197d3735be0136d37fef"
+    },
+    "sample_sample_003": {
+      "path": "generated/classifier/sample_003.mem",
+      "sha256": "8aeab48ad0c6b4cff7a48e4a3f1c87216b79b576c60b3655cee3e917c855aaee"
+    },
+    "sample_sample_004": {
+      "path": "generated/classifier/sample_004.mem",
+      "sha256": "71e600f1a7fe031161cde8f978156ae2b1d36344e358df9ed4cb04c5b5bbf921"
+    },
+    "sample_sample_005": {
+      "path": "generated/classifier/sample_005.mem",
+      "sha256": "5a52bd64f5fa414d2bf139ae742d335f3239b52a44b4e0a9475559e69135f142"
+    },
+    "sample_sample_006": {
+      "path": "generated/classifier/sample_006.mem",
+      "sha256": "96564df2250d3b4f88338bda734c6a35ee051b96ab8e97d3d98b983884207aa6"
+    },
+    "sample_sample_007": {
+      "path": "generated/classifier/sample_007.mem",
+      "sha256": "0917e3be41ba1b1a916072f7db0da2a993ef44152bdf67908d7f45be4e653d0e"
+    },
+    "sample_zeros": {
+      "path": "generated/classifier/zeros.mem",
+      "sha256": "73f46f0c2292590430e397a4e78d7ad3e492659f662e946fefd65478030e41cf"
+    },
+    "sample_saturated": {
+      "path": "generated/classifier/saturated.mem",
+      "sha256": "12518b49254c986c70fd85ff165ce5713d6646eeff67d590fefcf64279e785ab"
+    },
+    "sample_channel_order": {
+      "path": "generated/classifier/channel_order.mem",
+      "sha256": "f8f06e374df95c35d389f5145aea77023484b07ad74a68bfcde1a5a8042473a2"
+    },
+    "sample_random_000": {
+      "path": "generated/classifier/random_000.mem",
+      "sha256": "8ddd3a57f3617530db54aceb9cf5bbb2ddc013e318bb452ec9ffe1f83f9c1fb0"
+    },
+    "sample_random_001": {
+      "path": "generated/classifier/random_001.mem",
+      "sha256": "a4a1ad6a850c4f4eb55ce412f7f85e1f196323c2f15943b139b1bec2248a5249"
+    },
+    "sample_random_002": {
+      "path": "generated/classifier/random_002.mem",
+      "sha256": "f37eabcc3bc48274f93af2b9e64ee9c5af14044e8a7d50c6f05cc97b300c20c8"
+    },
+    "sample_random_003": {
+      "path": "generated/classifier/random_003.mem",
+      "sha256": "5c3befec5ba89c071f542ecb4f5073e19db125cb120324b6e5c7bfdb442c97cc"
+    },
+    "sample_random_004": {
+      "path": "generated/classifier/random_004.mem",
+      "sha256": "4b036e069aaf84e03f35db271178c2a8fc3ab70c70fe84259f3c32cfb27d62bf"
+    },
+    "sample_random_005": {
+      "path": "generated/classifier/random_005.mem",
+      "sha256": "d955f30f71e6133b2a0622210bd554a91c205a67fc29f334c588135c8581edb4"
+    },
+    "sample_random_006": {
+      "path": "generated/classifier/random_006.mem",
+      "sha256": "36f0487e8549f31e96a4205c25af036640237279102d435c05de05a70e6baa4a"
+    },
+    "sample_random_007": {
+      "path": "generated/classifier/random_007.mem",
+      "sha256": "900b4584a0d052583d993b24fecb4e3b742ae33be0f8cdf79cd41cbd45007e09"
+    },
+    "sample_random_008": {
+      "path": "generated/classifier/random_008.mem",
+      "sha256": "34dfd6f283e4131cb569a6715799820ea23a028836836f438d1d883e1b7f2efb"
+    },
+    "sample_random_009": {
+      "path": "generated/classifier/random_009.mem",
+      "sha256": "1828b940881ad7a09134b9aba7ce3462c5c57aa786edf50a2974d4c35242fc23"
+    },
+    "sample_random_010": {
+      "path": "generated/classifier/random_010.mem",
+      "sha256": "8916b68e25c3d163dcc7780e1ef2056acff95486401dcfb302058cb0a98c7769"
+    },
+    "sample_random_011": {
+      "path": "generated/classifier/random_011.mem",
+      "sha256": "78e3e1006b47a6539aec5268ffc4e888132b90e57d9a383975154f126e347fe1"
+    },
+    "sample_random_012": {
+      "path": "generated/classifier/random_012.mem",
+      "sha256": "33e57c6eaa91361008fdbf2900bd9e7f0b0094410fc2335c7939bfe7e07c9f40"
+    },
+    "sample_random_013": {
+      "path": "generated/classifier/random_013.mem",
+      "sha256": "39c301382fe8ce6902603e9e9b537f7e6094061e26e04692dc90422210063bfb"
+    },
+    "sample_random_014": {
+      "path": "generated/classifier/random_014.mem",
+      "sha256": "7110609633f05db9918b8d18b3a6820ce46f9ebc0553c37fcf7cdeab36fa4d60"
+    },
+    "sample_random_015": {
+      "path": "generated/classifier/random_015.mem",
+      "sha256": "834e59d403e1e4d0606512e51477a26f689fd47ba5c41cb3f54fb0986ae96a55"
+    }
+  }
+}
