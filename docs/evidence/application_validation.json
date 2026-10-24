@@ -22,9 +22,9 @@
     }
   ],
   "source_sha256_lf": {
-    "software/ultra96/rv32_controller.c": "f2732dae2206397189146bdbb2e424999bb53717a4a1afc60aba265ab97a9f67",
-    "software/ultra96/rv32_controller.h": "5f85a24292497295037e5c221e1190b905be0ff7696f29e60858778d7626bffe",
-    "software/ultra96/test_rv32_controller.c": "fd2d902e67d753a2b68fb84b14933325ae1d8e4d2117b879be71b619442caf8c",
+    "software/ultra96/rv32_controller.c": "e856281ad98ab7bf60e156f0867200b39e274c8b9549abbede339811a5a9a2bb",
+    "software/ultra96/rv32_controller.h": "457e236d0cdbe0a6ae5d172b42f4e375c2a582ab080ac165c42de692afb271ef",
+    "software/ultra96/test_rv32_controller.c": "31293ea8f5e5d8199809dceb4c1dbc7ce28af08e7564bba64b06e5d1213c7511",
     "software/ultra96/test_vector_classifier.c": "582e11de3c09fa522c1b5f078fdaea19ebde85824888ae6df6214ebd8e369b2a",
     "software/ultra96/test_vision_runtime.c": "7235f6453f0dcd872facbc285e5a84ed5edbc1637df98a3e966dece0a2b59ab4",
     "software/ultra96/vector_classifier.c": "8e0dce2a74aa0bafb62bf69bb15feec3fa90b22cb6607dcbfbd4659018746bf2",

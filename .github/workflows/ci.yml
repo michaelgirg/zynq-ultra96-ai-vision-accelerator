@@ -99,7 +99,7 @@ jobs:
       - name: Compile ARM boot helper contract
         run: >-
           riscv64-unknown-elf-gcc -march=rv32im -mabi=ilp32 -ffreestanding
-          -Wall -Wextra -Werror -Isoftware/ultra96
+          -Wall -Wextra -Werror -Isoftware/ultra96 -Isoftware/riscv/include
           -include software/riscv/build/controller_images.h
           -c software/ultra96/rv32_controller.c
           -o software/riscv/build/rv32_controller_host_check.o

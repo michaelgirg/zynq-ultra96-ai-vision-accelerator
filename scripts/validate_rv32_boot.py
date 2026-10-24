@@ -18,13 +18,15 @@ def main() -> None:
     if not cc:
         raise SystemExit("C compiler required (or run from an MSVC developer shell)")
     source = ROOT / "software/ultra96"
+    registers = ROOT / "software/riscv/include"
     with tempfile.TemporaryDirectory(prefix="rv32-boot-") as temp:
         exe = Path(temp) / "boot_test.exe"
         files = [str(source / name) for name in ("rv32_controller.c", "test_rv32_controller.c")]
         if Path(cc).stem.lower() == "cl":
-            command = [cc, "/nologo", "/O2", "/W4", "/WX", f"/I{source}", *files, f"/Fe:{exe}"]
+            command = [cc, "/nologo", "/O2", "/W4", "/WX", f"/I{source}", f"/I{registers}", *files, f"/Fe:{exe}"]
         else:
-            command = [cc, "-std=c99", "-O2", "-Wall", "-Wextra", "-Werror", "-I", str(source), *files, "-o", str(exe)]
+            command = [cc, "-std=c99", "-O2", "-Wall", "-Wextra", "-Werror", "-I", str(source),
+                       "-I", str(registers), *files, "-o", str(exe)]
         subprocess.run(command, cwd=temp, check=True)
         subprocess.run([str(exe)], check=True)
 

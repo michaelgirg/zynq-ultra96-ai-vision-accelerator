@@ -84,8 +84,10 @@ outstanding MMIO read even when the mailbox appears idle. Use coordinated reset.
 
 The complete application detects quarantine through the mailbox, snapshots its
 diagnostics, and avoids DMA/accelerator reads, classification, buffer reuse and
-job ACK. The ARM mailbox path must remain reachable independently of the stalled
-target. SmartConnect/PS fault-isolation behavior is not proven by the behavioral
+job ACK. The standalone boot helper also checks mailbox version/quarantine before
+loading firmware, submitting or acknowledging a job. Neither helper can repair
+a fabric fault with CPU-only reset. The ARM mailbox path must remain reachable
+independently of the stalled target. SmartConnect/PS fault-isolation behavior is not proven by the behavioral
 fabric. This watchdog does not protect an ARM core already stalled in its own
 MMIO access, nor make CPU-only or peripheral-only reset a safe recovery action.
 

@@ -12,6 +12,10 @@
 #define RV32_BOOT_BAD_IMAGE        -1
 #define RV32_BOOT_IMEM_VERIFY      -2
 #define RV32_BOOT_DMEM_VERIFY      -3
+#define RV32_BOOT_NEEDS_RESET      -4
+#define RV32_BOOT_BAD_MAILBOX      -5
+#define RV32_JOB_NEEDS_RESET       -3
+#define RV32_JOB_BAD_MAILBOX       -4
 
 typedef struct {
     uint32_t input_addr;
