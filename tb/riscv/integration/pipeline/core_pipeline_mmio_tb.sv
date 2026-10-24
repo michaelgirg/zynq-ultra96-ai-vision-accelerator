@@ -152,7 +152,7 @@ module core_pipeline_mmio_tb;
                          mmio_req_wdata, $time);
                 transaction_pending <= 1'b1;
                 mmio_req_ready <= 1'b0;
-                response_delay <= $urandom_range(1, 5);
+                response_delay <= transactions >= 3 ? 11 : $urandom_range(1, 5);
 
                 if (mmio_req_wstrb != 4'b1111)
                     fail("MMIO store did not use full word strobes");
@@ -178,6 +178,17 @@ module core_pipeline_mmio_tb;
                         mmio_resp_rdata <= '0;
                     end
 
+                    3, 5: begin
+                        if (mmio_req_write || mmio_req_addr != 32'ha000_0004)
+                            fail("stall-forwarding status load mismatch");
+                        mmio_resp_rdata <= 4;
+                    end
+                    4, 6: begin
+                        if (!mmio_req_write || mmio_req_addr != 32'ha002_0000 ||
+                            mmio_req_wdata != (transactions == 4 ? 3 : 29))
+                            fail("WB value lost while EX was held behind MMIO");
+                        mmio_resp_rdata <= 0;
+                    end
                     default: fail("duplicate or unexpected MMIO request");
                 endcase
 
@@ -217,7 +228,19 @@ module core_pipeline_mmio_tb;
         write_imem_word(4, encode_addi(12'h001, 5'd3, 5'd4));
         write_imem_word(5, encode_lui(20'ha0020, 5'd5));
         write_imem_word(6, encode_sw(12'h000, 5'd4, 5'd5));
-        write_imem_word(7, INSTRUCTION_EBREAK);
+        write_imem_word(7, encode_addi(0, 0, 0));
+        // Producer drains WB while an independent load stalls MEM and the
+        // consumer is held in EX. Test both the ALU rs1 and store-data rs2.
+        write_imem_word(8, encode_addi(4, 0, 11));
+        write_imem_word(9, encode_lw(4, 1, 3));
+        write_imem_word(10, encode_addi(12'hfff, 11, 11));
+        write_imem_word(11, encode_addi(0, 0, 0));
+        write_imem_word(12, encode_sw(0, 11, 5));
+        for (int i = 13; i < 16; i++) write_imem_word(i, encode_addi(0, 0, 0));
+        write_imem_word(16, encode_addi(29, 0, 12));
+        write_imem_word(17, encode_lw(4, 1, 3));
+        write_imem_word(18, encode_sw(0, 12, 5));
+        write_imem_word(19, INSTRUCTION_EBREAK);
 
         repeat (3) @(posedge clk);
         @(negedge clk);
@@ -235,14 +258,16 @@ module core_pipeline_mmio_tb;
 
         if (!halted)
             fail("MMIO program did not halt");
-        if (transactions != 3)
-            fail("MMIO program did not issue exactly three transactions");
+        if (transactions != 7)
+            fail("MMIO program did not issue exactly seven transactions");
         if (local_requests != 0)
             fail("MMIO program touched the D-cache request path");
-        if (dut.u_regfile.regs[3] != 32'h1234_5678)
+        if (dut.u_regfile.regs[3] != 4)
             fail("MMIO load did not write back expected data");
         if (dut.u_regfile.regs[4] != 32'h1234_5679)
             fail("dependent instruction used wrong MMIO load value");
+        if (dut.u_regfile.regs[11] != 3 || dut.u_regfile.regs[12] != 29)
+            fail("stalled operand register mismatch");
 
         if (errors == 0)
             $display("PASS: core_pipeline_mmio_tb (%0d cycles, %0d transactions)",

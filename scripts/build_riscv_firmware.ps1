@@ -2,7 +2,8 @@
 param(
     [string]$ToolchainBin = "",
     [string]$PythonExe = "python",
-    [string]$BuildDir = ""
+    [string]$BuildDir = "",
+    [uint32]$PollLimit = 1000000
 )
 
 $ErrorActionPreference = "Stop"
@@ -69,6 +70,8 @@ $cflags = @(
     "-Werror", "-ffunction-sections", "-fdata-sections",
     "-I$(Join-Path $softwareRoot 'include')"
 )
+if ($PollLimit -eq 0) { throw "PollLimit must be positive" }
+$cflags += "-DCONTROLLER_POLL_LIMIT=${PollLimit}u"
 
 Invoke-Checked $gcc ($cflags + @(
     "-c", (Join-Path $softwareRoot "startup.S"), "-o", $startupObject

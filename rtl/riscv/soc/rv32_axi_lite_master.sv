@@ -1,6 +1,15 @@
-module rv32_axi_lite_master (
+module rv32_axi_lite_master #(
+    parameter int WATCHDOG_CYCLES = 1000000
+) (
     input logic clk,
+    // rst is a coordinated fabric reset, NOT the software CPU reset.
     input logic rst,
+    input logic processor_reset,
+    output logic watchdog_timeout,
+    output logic quarantined,
+    output logic [31:0] watchdog_addr,
+    output logic [31:0] watchdog_info,
+    output logic [31:0] watchdog_wait,
 
     input  logic        req_valid,
     output logic        req_ready,
@@ -57,8 +66,21 @@ module rv32_axi_lite_master (
     logic        write_data_done;
     logic [31:0] response_rdata;
     logic        response_fault;
+    logic        request_write;
+    logic        processor_abandoned;
+    localparam int WAIT_WIDTH = (WATCHDOG_CYCLES > 1) ? $clog2(WATCHDOG_CYCLES) : 1;
+    logic [WAIT_WIDTH-1:0] wait_count;
+    wire bus_waiting = (state == AXI_WRITE_CHANNELS) || (state == AXI_WRITE_RESPONSE) ||
+                       (state == AXI_READ_ADDRESS) || (state == AXI_READ_RESPONSE);
+    wire bus_progress = (M_AXI_AWVALID && M_AXI_AWREADY) ||
+                        (M_AXI_WVALID && M_AXI_WREADY) ||
+                        (M_AXI_BVALID && M_AXI_BREADY) ||
+                        (M_AXI_ARVALID && M_AXI_ARREADY) ||
+                        (M_AXI_RVALID && M_AXI_RREADY);
+    wire [4:0] waiting_channels = {M_AXI_RREADY, M_AXI_ARVALID, M_AXI_BREADY,
+                                   M_AXI_WVALID, M_AXI_AWVALID};
 
-    assign req_ready = (state == AXI_IDLE);
+    assign req_ready = (state == AXI_IDLE) && !quarantined && !processor_reset;
 
     assign M_AXI_AWADDR = request_addr;
     assign M_AXI_AWPROT = 3'b000;
@@ -78,7 +100,8 @@ module rv32_axi_lite_master (
 
     assign M_AXI_RREADY = (state == AXI_READ_RESPONSE);
 
-    assign resp_valid = (state == AXI_PROCESSOR_RESPONSE);
+    assign resp_valid = (state == AXI_PROCESSOR_RESPONSE) &&
+                        !processor_abandoned && !processor_reset;
     assign resp_rdata = response_rdata;
     assign resp_fault = response_fault;
 
@@ -92,8 +115,34 @@ module rv32_axi_lite_master (
             write_data_done <= 1'b0;
             response_rdata <= '0;
             response_fault <= 1'b0;
+            request_write <= 1'b0;
+            processor_abandoned <= 1'b0;
+            wait_count <= '0;
+            watchdog_timeout <= 1'b0;
+            quarantined <= 1'b0;
+            watchdog_addr <= '0;
+            watchdog_info <= '0;
+            watchdog_wait <= '0;
         end
         else begin
+            // Never withdraw AXI VALID or manufacture a bus response on timeout.
+            // Preserve/drain this transaction, then block all subsequent traffic.
+            if (!bus_waiting || bus_progress) wait_count <= '0;
+            else if (!watchdog_timeout) begin
+                if (wait_count == WAIT_WIDTH'(WATCHDOG_CYCLES - 1)) begin
+                    watchdog_timeout <= 1'b1;
+                    quarantined <= 1'b1;
+                    watchdog_addr <= request_addr;
+                    watchdog_info <= {23'b0, request_write, 3'b0, waiting_channels};
+                    watchdog_wait <= WATCHDOG_CYCLES;
+                end else wait_count <= wait_count + 1'b1;
+            end
+            // Software reset must not cancel a partially accepted AXI transfer
+            // or let its late response escape into a newly booted processor.
+            if (processor_reset && state != AXI_IDLE) begin
+                processor_abandoned <= 1'b1;
+                quarantined <= 1'b1;
+            end
             case (state)
                 AXI_IDLE: begin
                     if (req_valid && req_ready) begin
@@ -104,6 +153,7 @@ module rv32_axi_lite_master (
                         write_data_done <= 1'b0;
                         response_rdata <= '0;
                         response_fault <= 1'b0;
+                        request_write <= req_write;
                         state <= req_write ? AXI_WRITE_CHANNELS :
                                              AXI_READ_ADDRESS;
                     end
@@ -125,7 +175,7 @@ module rv32_axi_lite_master (
                 AXI_WRITE_RESPONSE: begin
                     if (M_AXI_BVALID && M_AXI_BREADY) begin
                         response_rdata <= '0;
-                        response_fault <= (M_AXI_BRESP != 2'b00);
+                        response_fault <= (M_AXI_BRESP != 2'b00) || watchdog_timeout;
                         state <= AXI_PROCESSOR_RESPONSE;
                     end
                 end
@@ -138,13 +188,13 @@ module rv32_axi_lite_master (
                 AXI_READ_RESPONSE: begin
                     if (M_AXI_RVALID && M_AXI_RREADY) begin
                         response_rdata <= M_AXI_RDATA;
-                        response_fault <= (M_AXI_RRESP != 2'b00);
+                        response_fault <= (M_AXI_RRESP != 2'b00) || watchdog_timeout;
                         state <= AXI_PROCESSOR_RESPONSE;
                     end
                 end
 
                 AXI_PROCESSOR_RESPONSE: begin
-                    if (resp_valid && resp_ready)
+                    if ((resp_valid && resp_ready) || processor_abandoned)
                         state <= AXI_IDLE;
                 end
 
@@ -173,7 +223,7 @@ module rv32_axi_lite_master (
     endproperty
 
     property p_processor_response_stable;
-        @(posedge clk) disable iff (rst)
+        @(posedge clk) disable iff (rst || processor_reset)
             resp_valid && !resp_ready |=>
                 resp_valid && $stable({resp_rdata, resp_fault});
     endproperty
@@ -188,6 +238,13 @@ module rv32_axi_lite_master (
     assert property (p_ar_stable);
     assert property (p_processor_response_stable);
     assert property (p_no_read_write_overlap);
+    assert property (@(posedge clk) disable iff (rst)
+        watchdog_timeout |=> watchdog_timeout && quarantined &&
+            $stable({watchdog_addr, watchdog_info, watchdog_wait}));
+    assert property (@(posedge clk) disable iff (rst)
+        quarantined |-> !req_ready);
+    assert property (@(posedge clk) disable iff (rst)
+        watchdog_timeout && bus_waiting |-> !resp_valid);
 `endif
 
 endmodule

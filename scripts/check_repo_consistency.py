@@ -262,6 +262,15 @@ def check_mailbox_map(errors: list[str]) -> None:
                 f"mailbox header mismatch for {name}: "
                 f"header=0x{value:03X}, rtl=0x{rtl_offsets[rtl_name]:03X}"
             )
+    for name in rtl_offsets:
+        if ("ID" if name == "MAILBOX_ID" else name) not in header_offsets:
+            errors.append(f"mailbox RTL register {name} missing from firmware header")
+    extension = (ROOT / "docs/job_diagnostics.md").read_text(encoding="utf-8")
+    documented = {name: int(value, 16) for value, name in re.findall(
+        r"\| `0x([0-9A-Fa-f]+)` \| `([A-Z0-9_]+)` \|", extension)}
+    for name, value in rtl_offsets.items():
+        if value >= 0x30 and documented.get(name) != value:
+            errors.append(f"mailbox diagnostic register {name} missing/mismatched in documentation")
 
 
 def check_riscv_mem_packing(errors: list[str]) -> None:

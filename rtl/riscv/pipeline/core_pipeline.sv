@@ -143,6 +143,7 @@ module core_pipeline #(
 
     id_ex_t         id_ex_d;
     id_ex_t         id_ex_q;
+    id_ex_t         id_ex_register_input;
 
     // ------------------------------------------------------------------------
     // EX stage wires
@@ -452,12 +453,24 @@ module core_pipeline #(
         end
     end
 
+    always_comb begin
+        id_ex_register_input = id_ex_d;
+        if (stall_id_ex) begin
+            // WB drains during a long MEM/EX stall. Retain a bypassed value
+            // before its producer disappears, while holding all instruction
+            // metadata. Otherwise the consumer falls back to stale ID reads.
+            id_ex_register_input = id_ex_q;
+            id_ex_register_input.rs1_data = forwarded_rs1_data;
+            id_ex_register_input.rs2_data = forwarded_rs2_data;
+        end
+    end
+
     id_ex_reg u_id_ex_reg (
         .clk   (clk_i),
         .rst   (rst_i),
-        .en    (!stall_id_ex),
+        .en    (1'b1),
         .flush (flush_id_ex),
-        .data  (id_ex_d),
+        .data  (id_ex_register_input),
         .data_o(id_ex_q)
     );
 

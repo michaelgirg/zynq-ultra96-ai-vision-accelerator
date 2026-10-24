@@ -308,7 +308,7 @@ class vector4_ral_test extends uvm_test;
         read_expect(env.regmodel.conv_relu_en, 1, 32'h0000_0001, "CONV_RELU_EN reset");
         read_expect(env.regmodel.vector_cfg_version, 0, 32'hffff_ffff, "CFG_VERSION reset");
         read_expect(env.regmodel.ip_id, 32'h5a42_4156, 32'hffff_ffff, "IP_ID");
-        read_expect(env.regmodel.ip_version, 32'h0002_0000, 32'hffff_ffff, "IP_VERSION");
+        read_expect(env.regmodel.ip_version, 32'h0002_0001, 32'hffff_ffff, "IP_VERSION");
         read_expect(env.regmodel.capabilities, 32'h000f_044f, 32'hffff_ffff, "CAPABILITIES");
         read_expect(env.regmodel.frame_count, 0, 32'hffff_ffff, "FRAME_COUNT reset");
         read_expect(env.regmodel.error_count, 0, 32'hffff_ffff, "ERROR_COUNT reset");

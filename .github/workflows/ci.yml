@@ -30,6 +30,10 @@ jobs:
         run: python scripts/validate_vector_classifier.py
       - name: Validate candidate C classifier against PyTorch golden logits
         run: python scripts/validate_vector_classifier.py --model-dir generated/candidates/vector_conv4/classifier
+      - name: Test fail-closed ARM boot helper
+        run: python scripts/validate_rv32_boot.py
+      - name: Check benchmark evidence boundaries
+        run: python -m unittest discover -s scripts -p test_vision_benchmark.py
 
   pytorch-contracts:
     runs-on: ubuntu-latest
@@ -72,6 +76,8 @@ jobs:
         run: verilator --lint-only --sv --timing --Wall --Wno-fatal --top-module axis_preprocess_vector_cdc -f scripts/rtl_filelist.f
       - name: Lint RV32 heterogeneous subsystem
         run: verilator --lint-only --sv --timing --Wall --Wno-fatal --top-module rv32_pipeline_axi_subsystem -f scripts/rtl_rv32_filelist.f
+      - name: Lint job mailbox and diagnostics
+        run: verilator --lint-only --sv --timing --Wall --Wno-fatal --top-module rv32_job_mailbox rtl/riscv/soc/rv32_job_mailbox.sv
 
   rv32-firmware:
     runs-on: ubuntu-latest
@@ -88,10 +94,24 @@ jobs:
           text_addr=$(riscv64-unknown-elf-objdump -h software/riscv/build/controller.elf | awk '$2 == ".text" {print $4}')
           test "$entry" = "0x0"
           test "$text_addr" = "00000000"
+      - name: Execute complete application with functional DMA/cache model
+        run: python3 scripts/validate_vision_app.py --cc gcc --sanitize
       - name: Compile ARM boot helper contract
         run: >-
           riscv64-unknown-elf-gcc -march=rv32im -mabi=ilp32 -ffreestanding
-          -Wall -Wextra -Werror -Isoftware/ultra96
+          -Wall -Wextra -Werror -Isoftware/ultra96 -Isoftware/riscv/include
           -include software/riscv/build/controller_images.h
           -c software/ultra96/rv32_controller.c
           -o software/riscv/build/rv32_controller_host_check.o
+
+  bounded-formal:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install Yosys
+        run: sudo apt-get update && sudo apt-get install --yes yosys
+      - name: Check real AXI master safety and detect intentional defect
+        run: python scripts/run_bounded_formal.py --depth 32

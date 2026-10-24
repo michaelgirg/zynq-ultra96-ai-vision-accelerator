@@ -1,4 +1,5 @@
 #include "rv32_controller.h"
+#include "job_mailbox.h"
 
 #define MB_COMMAND        0x00u
 #define MB_STATUS         0x04u
@@ -68,14 +69,20 @@ int rv32_boot_controller(
     size_t dmem_word_count
 )
 {
-    if (imem_word_count > RV32_LOCAL_MEMORY_WORDS ||
+    // Even a rejected replacement image must stop an already-running core.
+    rv32_hold_in_reset(mailbox_base);
+    if (imem_word_count == 0u ||
+        imem_word_count > RV32_LOCAL_MEMORY_WORDS ||
         dmem_word_count > RV32_LOCAL_MEMORY_WORDS ||
         (imem_word_count != 0u && imem_words == NULL) ||
         (dmem_word_count != 0u && dmem_words == NULL)) {
         return RV32_BOOT_BAD_IMAGE;
     }
+    if (read32(mailbox_base, MAILBOX_REG_VERSION) != MAILBOX_VERSION_VALUE)
+        return RV32_BOOT_BAD_MAILBOX;
+    if (read32(mailbox_base, MAILBOX_REG_AXI_STATUS) & MAILBOX_AXI_QUARANTINED)
+        return RV32_BOOT_NEEDS_RESET;
 
-    rv32_hold_in_reset(mailbox_base);
     rv32_load_memory_words(imem_portal_base, imem_words, imem_word_count);
     rv32_load_memory_words(dmem_portal_base, dmem_words, dmem_word_count);
 
@@ -89,11 +96,17 @@ int rv32_boot_controller(
     }
 
     rv32_release_from_reset(mailbox_base);
+    if (!(read32(mailbox_base, MB_BOOT_CONTROL) & 1u)) return RV32_BOOT_NEEDS_RESET;
     return RV32_BOOT_OK;
 }
 
 int rv32_submit_job(uintptr_t mailbox_base, const rv32_vision_job_t *job)
 {
+    if (job == NULL) return -1;
+    if (read32(mailbox_base, MAILBOX_REG_VERSION) != MAILBOX_VERSION_VALUE)
+        return RV32_JOB_BAD_MAILBOX;
+    if (read32(mailbox_base, MAILBOX_REG_AXI_STATUS) & MAILBOX_AXI_QUARANTINED)
+        return RV32_JOB_NEEDS_RESET;
     uint32_t status = read32(mailbox_base, MB_STATUS);
     if ((status & (MB_PENDING | MB_BUSY | MB_DONE | MB_ERROR)) != 0u) {
         return -1;
@@ -116,7 +129,11 @@ int rv32_wait_for_job(
     uint32_t *error_code
 )
 {
+    if (read32(mailbox_base, MAILBOX_REG_VERSION) != MAILBOX_VERSION_VALUE)
+        return RV32_JOB_BAD_MAILBOX;
     for (uint32_t poll = 0; poll < poll_limit; ++poll) {
+        if (read32(mailbox_base, MAILBOX_REG_AXI_STATUS) & MAILBOX_AXI_QUARANTINED)
+            return RV32_JOB_NEEDS_RESET;
         uint32_t status = read32(mailbox_base, MB_STATUS);
         if ((status & MB_DONE) != 0u) {
             if (result != NULL) {

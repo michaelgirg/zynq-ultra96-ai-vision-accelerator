@@ -2,7 +2,8 @@ module rv32_pipeline_axi_subsystem #(
     parameter int IMEM_WORDS = 16384,
     parameter int DMEM_WORDS = 16384,
     parameter string IMEM_HEX = "",
-    parameter string DMEM_HEX = ""
+    parameter string DMEM_HEX = "",
+    parameter int AXI_WATCHDOG_CYCLES = 1000000
 ) (
     input  logic        S_AXI_ACLK,
     input  logic        system_rst_i,
@@ -13,6 +14,11 @@ module rv32_pipeline_axi_subsystem #(
     output logic        illegal_instruction_o,
     output logic        instruction_fault_o,
     output logic        data_fault_o,
+    output logic        axi_timeout_o,
+    output logic        axi_quarantined_o,
+    output logic [31:0] axi_fault_addr_o,
+    output logic [31:0] axi_fault_info_o,
+    output logic [31:0] axi_fault_wait_o,
 
     output logic [31:0] M_AXI_AWADDR,
     output logic [2:0]  M_AXI_AWPROT,
@@ -92,7 +98,8 @@ module rv32_pipeline_axi_subsystem #(
         .IMEM_WORDS(IMEM_WORDS),
         .DMEM_WORDS(DMEM_WORDS),
         .IMEM_HEX  (IMEM_HEX),
-        .DMEM_HEX  (DMEM_HEX)
+        .DMEM_HEX  (DMEM_HEX),
+        .AXI_WATCHDOG_CYCLES(AXI_WATCHDOG_CYCLES)
     ) u_processor (
         .clk_i(S_AXI_ACLK),
         .rst_i(core_reset),
@@ -103,6 +110,8 @@ module rv32_pipeline_axi_subsystem #(
         .illegal_instruction_o,
         .instruction_fault_o,
         .data_fault_o,
+        .axi_timeout_o, .axi_quarantined_o,
+        .axi_fault_addr_o, .axi_fault_info_o, .axi_fault_wait_o,
         .M_AXI_AWADDR, .M_AXI_AWPROT, .M_AXI_AWVALID, .M_AXI_AWREADY,
         .M_AXI_WDATA, .M_AXI_WSTRB, .M_AXI_WVALID, .M_AXI_WREADY,
         .M_AXI_BRESP, .M_AXI_BVALID, .M_AXI_BREADY,

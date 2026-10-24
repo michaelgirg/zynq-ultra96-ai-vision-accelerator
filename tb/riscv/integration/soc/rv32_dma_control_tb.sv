@@ -1,6 +1,8 @@
 `timescale 1ns/1ps
 
 module rv32_dma_control_tb;
+    wire axi_timeout_o, axi_quarantined_o;
+    wire [31:0] axi_fault_addr_o, axi_fault_info_o, axi_fault_wait_o;
     import rv32i_pkg::*;
 
     localparam int MAX_CYCLES = 50000;
@@ -373,7 +375,15 @@ module rv32_dma_control_tb;
                 end
                 else if ((local_awaddr & 32'hFFFF_0000) == 32'hA001_0000) begin
                     case (local_awaddr[15:0])
-                        16'h0000: mm2s_control <= local_wdata;
+                        16'h0000: begin
+                            if (local_wdata[2]) begin
+                                mm2s_control <= 0;
+                                s2mm_control <= 0;
+                                mm2s_active <= 0;
+                                s2mm_active <= 0;
+                                dma_stream_valid <= 0;
+                            end else mm2s_control <= local_wdata;
+                        end
                         16'h0018: mm2s_source_address <= local_wdata;
                         16'h0028: begin
                             mm2s_length <= local_wdata;

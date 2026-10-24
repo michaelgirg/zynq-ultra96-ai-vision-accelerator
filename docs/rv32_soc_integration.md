@@ -28,6 +28,8 @@ the configured MMIO windows to `rv32_axi_lite_master`; all other valid local
 addresses retain the existing D-cache and backing-memory path. The router and
 bridge permit one outstanding aligned 32-bit request, so the MEM stage simply
 stalls until the selected target returns a response.
+The independent [AXI progress watchdog](job_diagnostics.md) detects prolonged
+stalls and quarantines later traffic without cancelling the outstanding transfer.
 
 ## Address map
 
@@ -83,6 +85,11 @@ WB, including normal load-use forwarding behavior.
 | `0x28` | `MAILBOX_ID` | read-only `0x5A424D42` (`ZBMB`) |
 | `0x2C` | `BOOT_CONTROL` | bit 0 releases RV32 reset after host memory loading |
 
+The additive `0x30`-`0x9C` [diagnostics register extension](job_diagnostics.md)
+provides mailbox version discovery, whole-job IRQs, 64-bit timestamps/duration,
+saturating event counters and sticky first-fault/AXI records. ACK preserves
+diagnostics. CPU-only reset cannot recover a quarantined/in-flight AXI transfer.
+
 The host writes a descriptor and submits it. RV32 claims the pending job,
 which freezes descriptor writes, then writes result/error and completes or
 fails it. The host reads the terminal state and acknowledges it before the
@@ -91,6 +98,11 @@ next descriptor. Illegal transitions return AXI `SLVERR`.
 `TRANSFER_BYTES` uses AXI DMA byte units. Because the current stream contract
 is one 32-bit beat with full `TKEEP` per pixel, a 784-pixel frame is 3,136
 bytes on both MM2S and S2MM.
+
+Recovery-aware firmware validates discovered frame size, both buffers and mode
+capability, polls both DMA errors and resets/aborts failed transfers. Error 7
+quarantines later jobs until platform recovery/reboot. See the
+[full-frame simulation contract](soc_end_to_end_verification.md).
 
 ## Verification matrix
 
@@ -101,14 +113,20 @@ bytes on both MM2S and S2MM.
 | processor wrapper | firmware-like program through full AXI channels with dependent load use |
 | real accelerator | RV32 configures, starts, polls, and checks a threshold frame against real accelerator RTL |
 | DMA control | RV32 programs MM2S/S2MM, behavioral DMA moves the stream, and mailbox receives completion |
-| compiled firmware | GCC-built RV32IM image boots at reset vector zero, completes the DMA job in 588 cycles, and reports the expected codes for bad-job, bad-ID, MM2S, S2MM, and accelerator failures |
-| mailbox | 62 checks covering lifecycle, ownership, illegal transitions, and AXI backpressure |
+| compiled firmware | GCC-built RV32IM image boots at reset vector zero, completes DMA jobs, and reports expected bad-job, bad-ID, MM2S, S2MM and accelerator failure codes |
+| full-frame SoC | Real portal boot/mailbox/CDC; all modes, baseline/candidate coefficients, golden outputs, native C predictions and next-job recovery |
+| mailbox | 265 checks covering ownership, IRQ masking/W1C, timestamps, first-fault retention, counters, strobes and response stalls |
+| AXI watchdog | 184 checks across six stalled-channel scenarios, timeout boundaries, late drain, CPU reset, quarantine and real mailbox fault IRQs |
 | preservation | complete imported RV32IM pipeline/cache/M-extension regression remains passing |
 
 The behavioral DMA model verifies controller sequencing without requiring an
 encrypted Xilinx simulation model.
 
 ## Ultra96-V2 implementation evidence
+
+These are preserved checkpoint results, not signoff for the later operand-
+retention/frame-abort and mailbox/watchdog RTL. Rebuild Vivado before
+deploying current recovery-aware firmware.
 
 Vivado 2025.2 completed synthesis, routing, report generation, bitstream
 generation, and bitstream-inclusive XSA export for `xczu3eg-sbva484-1-i`.

@@ -1,5 +1,16 @@
 # Ultra96-V2 ARM host helper
 
+The [complete application guide](../../docs/ultra96_application.md) covers the
+portable runtime, functional simulation backend, Vitis adapter/demo, cache-safe
+buffer ownership, diagnostics and three-path benchmark. Run
+`python scripts/validate_vision_app.py` after building the RV32 images; use
+`--cc cl` in an MSVC shell. All native performance records are explicitly
+marked as functional-model measurements, not board results.
+The complete runtime requires the versioned mailbox diagnostics extension and
+retains job timing/first-fault telemetry. On AXI quarantine it avoids reading the
+stalled target. See the [reset/interrupt contract](../../docs/job_diagnostics.md);
+CPU reset alone is not a safe hot-reload/recovery operation during pending MMIO.
+
 ## Four-filter classifier
 
 `vector_classifier.c` consumes a completed mode-3 DMA output buffer containing
@@ -46,6 +57,16 @@ For the current one-pixel-per-32-bit-beat stream contract, set
 arrays and exact word counts. Pass those arrays to `rv32_boot_controller`; it
 keeps the core in reset on a bounds or readback failure and releases it only
 after both 64 KiB portals verify successfully.
+Include `software/riscv/include` when compiling this helper; it uses the shared
+mailbox register contract. Boot rejects an unsupported mailbox or bridge
+quarantine before touching either portal. Submit/wait return
+`RV32_JOB_NEEDS_RESET` without submitting/acknowledging if quarantine is set.
+
+Reset is asserted before validating replacement images, and empty IMEM is
+rejected. Native tests: `python scripts/validate_rv32_boot.py` (add `--cc cl`
+in an MSVC shell). Recovery-aware firmware requires `IP_VERSION=0x00020001`;
+saved older bitstream/XSA files need rebuilding. Error 7 quarantines later
+jobs; mailbox ACK alone does not restore DMA service.
 
 ```c
 rv32_boot_controller(

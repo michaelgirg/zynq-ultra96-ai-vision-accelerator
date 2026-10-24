@@ -155,7 +155,7 @@ class preprocess_reg_block extends uvm_reg_block;
         ip_id.build(32, "RO", 32'h5a42_4156);
         ip_version = preprocess_reg32::type_id::create("ip_version");
         ip_version.configure(this, null, "");
-        ip_version.build(32, "RO", 32'h0002_0000);
+        ip_version.build(32, "RO", 32'h0002_0001);
         capabilities = preprocess_reg32::type_id::create("capabilities");
         capabilities.configure(this, null, "");
         capabilities.build(32, "RO", 32'h000f_044f);

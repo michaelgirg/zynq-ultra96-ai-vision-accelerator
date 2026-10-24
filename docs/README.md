@@ -1,5 +1,15 @@
 # Documentation guide
 
+- [Job IRQ, timing and AXI watchdog](job_diagnostics.md): register extension,
+  first-fault evidence, safe drain/quarantine and CPU/system-reset boundaries.
+- [Complete Ultra96 application and benchmark](ultra96_application.md): native
+  functional backend, RTL capture replay, A53 adapter, diagnostics and limits.
+- [Executed bounded formal check](bounded_formal.md): real AXI-master safety,
+  initial-reset assumption, 32-step bound and intentional-defect sensitivity.
+
+- [End-to-end SoC simulation](soc_end_to_end_verification.md): real portal boot,
+  full-frame golden checks, native C predictions, failure recovery and limits.
+
 ## Current production documents
 
 - [Four-filter model training and ARM classifier](vector_model_training.md):

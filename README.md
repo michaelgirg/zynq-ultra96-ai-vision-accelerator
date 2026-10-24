@@ -13,6 +13,8 @@ flowchart LR
     RV["Five-stage RV32IM controller"] -->|"AXI4-Lite master"| CTRL
     PS -->|"Load I/D memory"| RV
     CTRL --> MAIL["Job mailbox"]
+    MAIL -->|"Whole-job / timeout IRQ"| PS
+    RV -->|"AXI watchdog diagnostics"| MAIL
     CTRL --> DMA["AXI DMA"]
     CTRL -->|"100 MHz"| CDC["Dual-clock CDC bridge"]
     DMA -->|"MM2S, 150 MHz"| IP["Vision accelerator"]
@@ -33,11 +35,18 @@ The design supports four selectable modes:
 The production wrapper adds AXI4-Lite control, AXI DMA integration, diagnostics,
 interrupt status, register-version discovery, and a dual-clock CDC bridge.
 
+The [Ultra96 application](docs/ultra96_application.md) joins firmware boot,
+runtime model programming, cache-safe DMA, prediction, recovery and benchmark
+CSV. Its native functional backend is locally tested; its Vitis/A53 adapter is
+cross-compiled. Native-model timings are not reported as FPGA performance.
+
 A heterogeneous SoC configuration adds a five-stage RV32IM control processor
 with private caches, uncached AXI4-Lite accelerator/DMA access, an ARM/RV32 job
 mailbox, and host-loadable instruction/data memory. Questa tests execute the
 complete controller flow against the real accelerator RTL and a behavioral DMA
 model; see [`docs/rv32_soc_integration.md`](docs/rv32_soc_integration.md).
+The [job diagnostics extension](docs/job_diagnostics.md) adds whole-job timing,
+host interrupts, sticky first-fault records and safe AXI timeout quarantine.
 
 ## Accelerator-only production snapshot
 
@@ -61,6 +70,10 @@ model; see [`docs/rv32_soc_integration.md`](docs/rv32_soc_integration.md).
 | RV32 local memory | 64 KiB IMEM + 64 KiB DMEM mapped to 32 RAMB36E2 blocks |
 | Estimated power | 2.119 W |
 
+Implementation tables describe preserved routed checkpoints. Current recovery,
+operand-retention and mailbox/watchdog RTL require a fresh Vivado build;
+the recorded timing/resource numbers are not signoff for those changes.
+
 ## Verification summary
 
 - Python predictor: 6,272/6,272 packed outputs matched.
@@ -70,10 +83,19 @@ model; see [`docs/rv32_soc_integration.md`](docs/rv32_soc_integration.md).
   reset-abort recovery, response flushing, and IRQ crossing pass.
 - UVM: 11 focused tests plus a 100-seed randomized predictor run pass with zero
   UVM errors/fatals, assertion failures, or simulator errors.
-- RV32 SoC: processor preservation, MMIO/AXI, mailbox, host boot, and both
-  directed and GCC-built firmware DMA-control tests pass against the real
-  accelerator RTL, including five injected firmware error paths.
+- RV32 SoC: 306 jobs across three clocks, 210 full frames and 164,640 exact
+  output checks; real portal boot/mailbox/CDC, candidate coefficients, native C
+  capture checks and next-job recovery.
+  See the [end-to-end regression](docs/soc_end_to_end_verification.md).
 - Targeted functional coverage: 100%.
+- New SoC gate: 57/57 planned directed bins at each clock ratio, plus CPU
+  stalled-operand assertions (separate from historical UVM coverage).
+- [Executed AXI-master formal check](docs/bounded_formal.md): 32-step bounded
+  safety pass, including timeout/quarantine; the harness detects intentional
+  write-data and quarantine defects.
+
+Licensed UVM/coverage results above are preserved baseline evidence. The current
+version-expectation update is locally compiled; a licensed rerun is separate.
 
 Run the local checks from the repository root:
 
