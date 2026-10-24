@@ -1,5 +1,33 @@
 # Ultra96-V2 ARM host helper
 
+## Four-filter classifier
+
+`vector_classifier.c` consumes a completed mode-3 DMA output buffer containing
+784 packed words. It applies 2x2 max pooling, a 64-neuron ReLU layer, and a
+ten-class output layer. It uses float32 classifier parameters; the FPGA
+convolution remains INT8. Compile it with the matching exported model directory
+on the include path. Baseline exports live in `generated/classifier`; candidate
+exports live in `generated/candidates/vector_conv4/classifier`.
+
+```c
+#include "vector_classifier.h"
+#include "vector_classifier_weights.h"
+
+/* After successful DMA completion and platform-specific cache invalidation: */
+float logits[VECTOR_CLASSIFIER_CLASSES];
+int digit = vector_classifier_predict(output_words, &vector_classifier_model, logits);
+```
+
+Program all four filters' nine taps, bias, and shift/ReLU words from the matching
+`vector_front_config.h` through the vector shadow registers while idle, then
+commit before submitting a mode-3 job. Do not pair candidate classifier weights
+with baseline convolution coefficients. The caller owns DMA buffer allocation,
+address validation, cache maintenance, and mailbox job sequencing.
+
+See `docs/vector_model_training.md` for training, export, and C/RTL checks.
+
+## RV32 boot and jobs
+
 `rv32_controller.c` loads and verifies RV32 instruction/data words through the
 ARM-only AXI portals, releases the five-stage soft processor, submits vision
 jobs through the ownership mailbox, and acknowledges completion or failure.

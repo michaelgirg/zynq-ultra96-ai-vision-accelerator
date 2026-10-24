@@ -314,6 +314,24 @@ module axis_preprocess_vector_axi_lite_tb #(
         int signed biases [0:3] = '{11029, 17936, 257, -131};
         int shifts [0:3] = '{9, 7, 9, 9};
         logic [C_S_AXI_DATA_WIDTH-1:0] read_value;
+        logic [31:0] config_words [0:43];
+        string config_path;
+
+        if ($value$plusargs("VECTOR_CONFIG_MEM=%s", config_path)) begin
+            $readmemh(config_path, config_words);
+            for (int filter_index = 0; filter_index < 4; filter_index++) begin
+                for (int entry = 0; entry < 11; entry++) begin
+                    if ($isunknown(config_words[filter_index * 11 + entry]))
+                        $fatal(1, "Missing vector configuration word %0d", filter_index * 11 + entry);
+                end
+                for (int tap_index = 0; tap_index < 9; tap_index++)
+                    weights[filter_index][tap_index] = $signed(config_words[filter_index * 11 + tap_index]);
+                biases[filter_index] = $signed(config_words[filter_index * 11 + 9]);
+                if (config_words[filter_index * 11 + 10][8] != 1'b1)
+                    $fatal(1, "This classifier contract requires ReLU enabled");
+                shifts[filter_index] = int'(config_words[filter_index * 11 + 10][4:0]);
+            end
+        end
 
         for (int filter_index = 0; filter_index < 4; filter_index++) begin
             for (int tap_index = 0; tap_index < 9; tap_index++) begin
@@ -344,9 +362,9 @@ module axis_preprocess_vector_axi_lite_tb #(
 
         axi_write(ADDR_VECTOR_CFG_INDEX, C_S_AXI_DATA_WIDTH'(0));
         axi_read(ADDR_VECTOR_CFG_DATA, read_value);
-        if ($signed(read_value) !== 32'sd29) begin
+        if ($signed(read_value) !== weights[0][0]) begin
             mismatch_count++;
-            $error("vector weight readback mismatch: actual=%0d expected=29", $signed(read_value));
+            $error("vector weight readback mismatch: actual=%0d expected=%0d", $signed(read_value), weights[0][0]);
         end
     endtask
 

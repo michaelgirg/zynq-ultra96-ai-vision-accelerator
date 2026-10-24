@@ -89,6 +89,12 @@ toolchain is installed.
 
 ## Release artifacts
 
+The [four-filter training and classifier guide](docs/vector_model_training.md)
+records a validation-selected candidate with 98.37% clean MNIST accuracy using
+quantized convolution features, compared with 97.03% for the baseline. It adds
+augmentation/robustness evaluation and an ARM C classifier checked against
+PyTorch. Candidate coefficients load through the existing vector registers.
+
 The [Ultra96-V2 production release candidate](https://github.com/michaelgirg/zynq-ultra96-ai-vision-accelerator/releases/tag/ultra96-v2-rc1)
 contains the bitstream, bitstream-inclusive XSA, and SHA256 manifest. Generated
 Vivado/Vitis projects, simulator databases, logs, local machine settings, and
