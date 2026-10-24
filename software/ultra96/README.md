@@ -25,6 +25,10 @@ with baseline convolution coefficients. The caller owns DMA buffer allocation,
 address validation, cache maintenance, and mailbox job sequencing.
 
 See `docs/vector_model_training.md` for training, export, and C/RTL checks.
+The candidate C classifier has native-host validation on all 10,000 MNIST test
+images. Check `scripts/check_vector_model_bundle.py` before using an exported
+model; its frozen pairing includes the checkpoint, coefficients, classifier
+weights, and evaluation evidence.
 
 ## RV32 boot and jobs
 

@@ -1,5 +1,7 @@
 {
   "checkpoint_sha256": "21cd1606e65999461ca14f87a6f9c71817a572e76b973c6ebfdda05e281d3e8a",
+  "front_manifest_sha256": "3732b0a459312d741cca95c00788a32c0c2c6ad6035b1ad27fc3609d2af8ae69",
+  "validation_indices_sha256": "c1b09ca855d717c63d01f4645869c29dcda633338278506e6d136369fe406060",
   "split": "test",
   "torch_version": "2.14.1+cpu",
   "results": {
@@ -7,6 +9,7 @@
       "samples": 10000,
       "float_accuracy": 0.9835,
       "fixed_feature_accuracy": 0.9837,
+      "fixed_feature_loss": 0.055155328010767696,
       "prediction_agreement": 0.9992,
       "interior_saturation_fraction": 0.0,
       "fixed_feature_confusion_matrix": [
@@ -148,6 +151,7 @@
       "samples": 10000,
       "float_accuracy": 0.9773,
       "fixed_feature_accuracy": 0.9766,
+      "fixed_feature_loss": 0.07835576493814587,
       "prediction_agreement": 0.9989,
       "interior_saturation_fraction": 0.0,
       "fixed_feature_confusion_matrix": [
@@ -289,6 +293,7 @@
       "samples": 10000,
       "float_accuracy": 0.9701,
       "fixed_feature_accuracy": 0.9701,
+      "fixed_feature_loss": 0.09921897747218608,
       "prediction_agreement": 0.9983,
       "interior_saturation_fraction": 0.0,
       "fixed_feature_confusion_matrix": [
@@ -430,6 +435,7 @@
       "samples": 10000,
       "float_accuracy": 0.9781,
       "fixed_feature_accuracy": 0.9799,
+      "fixed_feature_loss": 0.06779343298524618,
       "prediction_agreement": 0.9974,
       "interior_saturation_fraction": 0.0,
       "fixed_feature_confusion_matrix": [

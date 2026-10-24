@@ -1,0 +1,21 @@
+{
+  "selection": "highest fixed-feature validation accuracy, then lowest fixed-feature loss; test results unused",
+  "selected_seed": 17,
+  "validation_indices_sha256": "c1b09ca855d717c63d01f4645869c29dcda633338278506e6d136369fe406060",
+  "candidates": [
+    {
+      "seed": 17,
+      "fixed_feature_validation_accuracy": 0.9788,
+      "fixed_feature_validation_loss": 0.07247359232157469,
+      "selected_epoch": 15,
+      "checkpoint_sha256": "21cd1606e65999461ca14f87a6f9c71817a572e76b973c6ebfdda05e281d3e8a"
+    },
+    {
+      "seed": 29,
+      "fixed_feature_validation_accuracy": 0.9764,
+      "fixed_feature_validation_loss": 0.07850035562217235,
+      "selected_epoch": 15,
+      "checkpoint_sha256": "2711cd18eb0733ff1e10f78f7d99cb9b49fdb9583bba8f37fb4d735754decd07"
+    }
+  ]
+}

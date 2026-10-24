@@ -1,0 +1,174 @@
+{
+  "schema_version": 1,
+  "text_hash_policy": "SHA256 after CRLF-to-LF normalization; checkpoints are byte-exact",
+  "files": {
+    "checkpoint": {
+      "path": "generated/candidates/vector_conv4/vector_conv4_cnn.pt",
+      "sha256": "21cd1606e65999461ca14f87a6f9c71817a572e76b973c6ebfdda05e281d3e8a"
+    },
+    "front_manifest": {
+      "path": "generated/candidates/vector_conv4/evaluation/front_manifest.json",
+      "sha256": "3732b0a459312d741cca95c00788a32c0c2c6ad6035b1ad27fc3609d2af8ae69"
+    },
+    "classifier_manifest": {
+      "path": "generated/candidates/vector_conv4/classifier/manifest.json",
+      "sha256": "df46252bd28ae7d1cda8defa96675fb9d56516005962f894019f77960db05766"
+    },
+    "classifier_weights": {
+      "path": "generated/candidates/vector_conv4/classifier/vector_classifier_weights.h",
+      "sha256": "677c42a18fe87235ac71d24a197317bef699ac9f801cec2a07fcd3b7f95f7fc2"
+    },
+    "front_config_header": {
+      "path": "generated/candidates/vector_conv4/classifier/vector_front_config.h",
+      "sha256": "04705f5028c0841f0ca02930b1ae089d20f98390980c482a4284b92014fe1e81"
+    },
+    "front_config_mem": {
+      "path": "generated/candidates/vector_conv4/classifier/vector_front_config.mem",
+      "sha256": "04a876d1703beb320fa012eedee4c8caa5048b81c04ba08354b9c9b80652b9c6"
+    },
+    "c_source": {
+      "path": "software/ultra96/vector_classifier.c",
+      "sha256": "8e0dce2a74aa0bafb62bf69bb15feec3fa90b22cb6607dcbfbd4659018746bf2"
+    },
+    "c_harness": {
+      "path": "software/ultra96/test_vector_classifier.c",
+      "sha256": "582e11de3c09fa522c1b5f078fdaea19ebde85824888ae6df6214ebd8e369b2a"
+    },
+    "c_header": {
+      "path": "software/ultra96/vector_classifier.h",
+      "sha256": "953c70df2b8b5157a7e289244a72df566e8e336792c96880e8fb8db67c21af50"
+    },
+    "sample_sample_000": {
+      "path": "generated/candidates/vector_conv4/classifier/sample_000.mem",
+      "sha256": "0387258d13afff32ade94333f0d662357a04c6e95214cd94d39a09d19401ff25"
+    },
+    "sample_sample_001": {
+      "path": "generated/candidates/vector_conv4/classifier/sample_001.mem",
+      "sha256": "7a8a0a0cc3fe828e0035105e59110072551a9ecd6226accad54a029ee38d92cb"
+    },
+    "sample_sample_002": {
+      "path": "generated/candidates/vector_conv4/classifier/sample_002.mem",
+      "sha256": "d8ced7df81d530d44098c5e1aea1af84bb0406104c7ece33313567f289464c15"
+    },
+    "sample_sample_003": {
+      "path": "generated/candidates/vector_conv4/classifier/sample_003.mem",
+      "sha256": "0b2b6ac39877b3adc0f8e246cba35511e20b8e15f7d4d44216c60f1aaad58cfd"
+    },
+    "sample_sample_004": {
+      "path": "generated/candidates/vector_conv4/classifier/sample_004.mem",
+      "sha256": "119b78c013a58cc9545bdb13999487e362ead02ae6e176d6bf39a95f882eac01"
+    },
+    "sample_sample_005": {
+      "path": "generated/candidates/vector_conv4/classifier/sample_005.mem",
+      "sha256": "10c0603b747461cfbefe169ee7b9dff8960f44d706a40df88595fda216738d0b"
+    },
+    "sample_sample_006": {
+      "path": "generated/candidates/vector_conv4/classifier/sample_006.mem",
+      "sha256": "20d1198b64f60a70273693183f803aea21e6c06c974444705b26e0ce4527ada9"
+    },
+    "sample_sample_007": {
+      "path": "generated/candidates/vector_conv4/classifier/sample_007.mem",
+      "sha256": "bfb4f1c07f5153cda49442143d83d520db1dea5d85b526aedb2b4f4df72893d3"
+    },
+    "sample_zeros": {
+      "path": "generated/candidates/vector_conv4/classifier/zeros.mem",
+      "sha256": "73f46f0c2292590430e397a4e78d7ad3e492659f662e946fefd65478030e41cf"
+    },
+    "sample_saturated": {
+      "path": "generated/candidates/vector_conv4/classifier/saturated.mem",
+      "sha256": "12518b49254c986c70fd85ff165ce5713d6646eeff67d590fefcf64279e785ab"
+    },
+    "sample_channel_order": {
+      "path": "generated/candidates/vector_conv4/classifier/channel_order.mem",
+      "sha256": "f8f06e374df95c35d389f5145aea77023484b07ad74a68bfcde1a5a8042473a2"
+    },
+    "sample_random_000": {
+      "path": "generated/candidates/vector_conv4/classifier/random_000.mem",
+      "sha256": "8ddd3a57f3617530db54aceb9cf5bbb2ddc013e318bb452ec9ffe1f83f9c1fb0"
+    },
+    "sample_random_001": {
+      "path": "generated/candidates/vector_conv4/classifier/random_001.mem",
+      "sha256": "a4a1ad6a850c4f4eb55ce412f7f85e1f196323c2f15943b139b1bec2248a5249"
+    },
+    "sample_random_002": {
+      "path": "generated/candidates/vector_conv4/classifier/random_002.mem",
+      "sha256": "f37eabcc3bc48274f93af2b9e64ee9c5af14044e8a7d50c6f05cc97b300c20c8"
+    },
+    "sample_random_003": {
+      "path": "generated/candidates/vector_conv4/classifier/random_003.mem",
+      "sha256": "5c3befec5ba89c071f542ecb4f5073e19db125cb120324b6e5c7bfdb442c97cc"
+    },
+    "sample_random_004": {
+      "path": "generated/candidates/vector_conv4/classifier/random_004.mem",
+      "sha256": "4b036e069aaf84e03f35db271178c2a8fc3ab70c70fe84259f3c32cfb27d62bf"
+    },
+    "sample_random_005": {
+      "path": "generated/candidates/vector_conv4/classifier/random_005.mem",
+      "sha256": "d955f30f71e6133b2a0622210bd554a91c205a67fc29f334c588135c8581edb4"
+    },
+    "sample_random_006": {
+      "path": "generated/candidates/vector_conv4/classifier/random_006.mem",
+      "sha256": "36f0487e8549f31e96a4205c25af036640237279102d435c05de05a70e6baa4a"
+    },
+    "sample_random_007": {
+      "path": "generated/candidates/vector_conv4/classifier/random_007.mem",
+      "sha256": "900b4584a0d052583d993b24fecb4e3b742ae33be0f8cdf79cd41cbd45007e09"
+    },
+    "sample_random_008": {
+      "path": "generated/candidates/vector_conv4/classifier/random_008.mem",
+      "sha256": "34dfd6f283e4131cb569a6715799820ea23a028836836f438d1d883e1b7f2efb"
+    },
+    "sample_random_009": {
+      "path": "generated/candidates/vector_conv4/classifier/random_009.mem",
+      "sha256": "1828b940881ad7a09134b9aba7ce3462c5c57aa786edf50a2974d4c35242fc23"
+    },
+    "sample_random_010": {
+      "path": "generated/candidates/vector_conv4/classifier/random_010.mem",
+      "sha256": "8916b68e25c3d163dcc7780e1ef2056acff95486401dcfb302058cb0a98c7769"
+    },
+    "sample_random_011": {
+      "path": "generated/candidates/vector_conv4/classifier/random_011.mem",
+      "sha256": "78e3e1006b47a6539aec5268ffc4e888132b90e57d9a383975154f126e347fe1"
+    },
+    "sample_random_012": {
+      "path": "generated/candidates/vector_conv4/classifier/random_012.mem",
+      "sha256": "33e57c6eaa91361008fdbf2900bd9e7f0b0094410fc2335c7939bfe7e07c9f40"
+    },
+    "sample_random_013": {
+      "path": "generated/candidates/vector_conv4/classifier/random_013.mem",
+      "sha256": "39c301382fe8ce6902603e9e9b537f7e6094061e26e04692dc90422210063bfb"
+    },
+    "sample_random_014": {
+      "path": "generated/candidates/vector_conv4/classifier/random_014.mem",
+      "sha256": "7110609633f05db9918b8d18b3a6820ce46f9ebc0553c37fcf7cdeab36fa4d60"
+    },
+    "sample_random_015": {
+      "path": "generated/candidates/vector_conv4/classifier/random_015.mem",
+      "sha256": "834e59d403e1e4d0606512e51477a26f689fd47ba5c41cb3f54fb0986ae96a55"
+    },
+    "test_evaluation": {
+      "path": "generated/candidates/vector_conv4/evaluation/evaluation.json",
+      "sha256": "32fb9ed05c84376aec5faca4268f6d6f3ae74b0468cd8b29d5dc89a95c2584b3"
+    },
+    "training_metrics": {
+      "path": "generated/candidates/vector_conv4/metrics_vector_conv4.json",
+      "sha256": "665e230dda70be9e8fef026ad153c5db2e9728bfc8ec2019ccae6e5e0ad2238d"
+    },
+    "quantized_validation": {
+      "path": "generated/candidates/vector_conv4/quantized_validation/evaluation.json",
+      "sha256": "b537af8b4173cf3a3e281a9bbc6b2000148eda0cd207614a901371f21850ee7c"
+    },
+    "quantized_selection": {
+      "path": "generated/candidates/vector_conv4/quantized_selection.json",
+      "sha256": "38383b32fa80e976fcee95be829f6ee5ab7baa85c8d82b5c3e39bc4593e510b7"
+    },
+    "historical_selection": {
+      "path": "generated/candidates/vector_conv4/selection.json",
+      "sha256": "7b86a23f7bb9f5c66d926fafa06577527d93d6d7fbb34d4006c28df3641d7fbb"
+    },
+    "c_dataset_evaluation": {
+      "path": "generated/candidates/vector_conv4/c_dataset_evaluation.json",
+      "sha256": "d568cbb90edfe9816cd295c062717c4ab7996819bb99b464a1f51ceeb5416db3"
+    }
+  }
+}
