@@ -2,6 +2,8 @@
 
 ## Current production documents
 
+- [Four-filter model training and ARM classifier](vector_model_training.md):
+  validation-based training, robustness results, candidate parameters, and C/RTL checks.
 - [Ultra96-V2 release status](production_v2_release_status.md): implementation,
   timing, CDC, DRC, utilization, and power evidence.
 - [Verification plan](verification_plan.md): reusable verification architecture
