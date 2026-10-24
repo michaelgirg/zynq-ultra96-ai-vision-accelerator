@@ -35,6 +35,7 @@ hardware/*.xsa
 
 # Generated datasets and local packages
 generated/data/
+generated/experiments/
 *.zip
 
 # Editors and operating systems
