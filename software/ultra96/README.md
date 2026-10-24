@@ -1,5 +1,12 @@
 # Ultra96-V2 ARM host helper
 
+The [complete application guide](../../docs/ultra96_application.md) covers the
+portable runtime, functional simulation backend, Vitis adapter/demo, cache-safe
+buffer ownership, diagnostics and three-path benchmark. Run
+`python scripts/validate_vision_app.py` after building the RV32 images; use
+`--cc cl` in an MSVC shell. All native performance records are explicitly
+marked as functional-model measurements, not board results.
+
 ## Four-filter classifier
 
 `vector_classifier.c` consumes a completed mode-3 DMA output buffer containing

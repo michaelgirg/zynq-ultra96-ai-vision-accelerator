@@ -1,0 +1,18 @@
+{
+  "engine": "Yosys 0.70 (git sha1 28ba3cb92, Release, Clang /workspace/YoWASP/yosys/wasi-sdk-33.0-x86_64-linux/share/cmake/../..//bin/clang++ 22.1.0)",
+  "mode": "bounded-safety",
+  "depth_cycles": 32,
+  "result": "PASS",
+  "top": "rv32_axi_master_harness",
+  "scope": "AXI request payload, stalled channel stability, one-outstanding ownership and response mapping",
+  "assumptions": [
+    "reset asserted at initial step"
+  ],
+  "unbounded_proof": false,
+  "liveness_proven": false,
+  "intentional_write_data_mutation_detected": true,
+  "source_sha256_lf": {
+    "rtl/riscv/soc/rv32_axi_lite_master.sv": "70635458cef039a8ae17dd4ba0d78811697cc9e003d011e867b8fdbbeea6625e",
+    "verif/formal/rv32_axi_master_harness.sv": "2724d2ccaa9aa3cfee51709d7922789f77705954510903d7c763b87452ba8a6b"
+  }
+}

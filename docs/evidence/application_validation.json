@@ -1,0 +1,45 @@
+{
+  "backend": "native-functional-model",
+  "physical_hardware": false,
+  "rv32_firmware_execution": false,
+  "rtl_capture_replay": true,
+  "dma_frames": 96,
+  "benchmark_rows": 144,
+  "sanitizers": false,
+  "speedup_claimed": false,
+  "models": [
+    {
+      "model": "baseline",
+      "checkpoint_sha256": "4d68fb0cbcbf0c903a7dfd742d06085a08e35a1aec532d37e51086cb4bc2fbc4",
+      "runtime_checks": 98,
+      "images": 8
+    },
+    {
+      "model": "candidate",
+      "checkpoint_sha256": "21cd1606e65999461ca14f87a6f9c71817a572e76b973c6ebfdda05e281d3e8a",
+      "runtime_checks": 98,
+      "images": 8
+    }
+  ],
+  "source_sha256_lf": {
+    "software/ultra96/rv32_controller.c": "f2732dae2206397189146bdbb2e424999bb53717a4a1afc60aba265ab97a9f67",
+    "software/ultra96/rv32_controller.h": "5f85a24292497295037e5c221e1190b905be0ff7696f29e60858778d7626bffe",
+    "software/ultra96/test_rv32_controller.c": "fd2d902e67d753a2b68fb84b14933325ae1d8e4d2117b879be71b619442caf8c",
+    "software/ultra96/test_vector_classifier.c": "582e11de3c09fa522c1b5f078fdaea19ebde85824888ae6df6214ebd8e369b2a",
+    "software/ultra96/test_vision_runtime.c": "8da4ba719dc460ae7d3e59e26d37a865c982a07b5efbd308605655c6e2a8ad66",
+    "software/ultra96/vector_classifier.c": "8e0dce2a74aa0bafb62bf69bb15feec3fa90b22cb6607dcbfbd4659018746bf2",
+    "software/ultra96/vector_classifier.h": "953c70df2b8b5157a7e289244a72df566e8e336792c96880e8fb8db67c21af50",
+    "software/ultra96/vector_front_reference.c": "255d9920a67ab887dd031b575aaa0c91b8ef738b55de9447dfba06011a1448b6",
+    "software/ultra96/vector_front_reference.h": "5a766974d601f856427778d2bce898a5550201652e926e55a43871c85e364daa",
+    "software/ultra96/vision_benchmark.c": "79028d59ed39b1c75bcbdf3732b45411a266067bbff928b7d0c6c23a3f04594a",
+    "software/ultra96/vision_benchmark.h": "f4ead5da5c2d9dc09805515495b8a45d385e82c3e3feb55ce6b1f2c9c115c2b4",
+    "software/ultra96/vision_demo_native.c": "d30ff228444ecdcd52eb03bfdc62e444722f494e2a36e9f7669a4d410f1a4bae",
+    "software/ultra96/vision_demo_vitis.c": "5699bbf6f030e5330b5b3e40bb44b4b4f0b258aae9fe2c03092d060b96662754",
+    "software/ultra96/vision_platform_vitis.c": "858638b5017ddf473934121b9d54e027714b73da55d698c98c4430dcaf5936e8",
+    "software/ultra96/vision_platform_vitis.h": "71eaedcd18ae3d3b317628ae852331b249342def926fa586b65385d9c6a7ced0",
+    "software/ultra96/vision_runtime.c": "86fa3cb5219f17a7cbef513710abd6718b51f92743c3d416b03dae2e1f259d31",
+    "software/ultra96/vision_runtime.h": "acea95a4103ddc3b365bcab7430306f4865a21d911e543496e5d0af0b7a58d45",
+    "software/ultra96/vision_sim.c": "61738c5d9b6d9cb35d3f022e7bc44709dc3116402702dcf68c5ca8636a00ff69",
+    "software/ultra96/vision_sim.h": "7132ed0209934ed9e305f69bd9fd374f29685f6c73b528985ac43f774e53299c"
+  }
+}

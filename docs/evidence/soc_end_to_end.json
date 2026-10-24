@@ -22,6 +22,23 @@
       "compared_words": 54880,
       "dma_resets": 17,
       "native_c_frames": 16,
+      "directed_coverage": {
+        "axis_half_period_ps": 3333,
+        "hit": 57,
+        "planned": 57,
+        "kind": "directed-event-bitmaps",
+        "masks": {
+          "axis_half_period_ps": 3333,
+          "modes": 15,
+          "models": 3,
+          "faults": 65535,
+          "recoveries": 65535,
+          "descriptors": 4095,
+          "discovery": 3,
+          "abort": 15,
+          "quarantine": 1
+        }
+      },
       "native_c_max_logit_error": 5.728881834698996e-06,
       "feature_captures": [
         {
@@ -113,6 +130,23 @@
       "compared_words": 54880,
       "dma_resets": 17,
       "native_c_frames": 16,
+      "directed_coverage": {
+        "axis_half_period_ps": 6500,
+        "hit": 57,
+        "planned": 57,
+        "kind": "directed-event-bitmaps",
+        "masks": {
+          "axis_half_period_ps": 6500,
+          "modes": 15,
+          "models": 3,
+          "faults": 65535,
+          "recoveries": 65535,
+          "descriptors": 4095,
+          "discovery": 3,
+          "abort": 15,
+          "quarantine": 1
+        }
+      },
       "native_c_max_logit_error": 5.728881834698996e-06,
       "feature_captures": [
         {
@@ -204,6 +238,23 @@
       "compared_words": 54880,
       "dma_resets": 17,
       "native_c_frames": 16,
+      "directed_coverage": {
+        "axis_half_period_ps": 1850,
+        "hit": 57,
+        "planned": 57,
+        "kind": "directed-event-bitmaps",
+        "masks": {
+          "axis_half_period_ps": 1850,
+          "modes": 15,
+          "models": 3,
+          "faults": 65535,
+          "recoveries": 65535,
+          "descriptors": 4095,
+          "discovery": 3,
+          "abort": 15,
+          "quarantine": 1
+        }
+      },
       "native_c_max_logit_error": 5.728881834698996e-06,
       "feature_captures": [
         {
@@ -295,10 +346,11 @@
     "rtl/axis_preprocess_vector_cdc.sv": "af02b9fa714e4dbae09fb56536e103ee6c39406b4fea0e29907ffd91172894cf",
     "software/riscv/src/main.c": "8858f3b3c362537c57960cb51d5b85581389efc7f8c2ad5bccac8d6c1413bcee",
     "software/riscv/linker.ld": "ea397561f7ae5888d879be6fe9b63e66b9992619c74124bdc7f5ffb3bf6c3eb2",
-    "tb/riscv/integration/soc/rv32_soc_end_to_end_tb.sv": "af8e2cf77555d5c96642b65909f098f7165fe25035be23225ccd5451f6ea5b70",
+    "tb/riscv/integration/soc/rv32_soc_end_to_end_tb.sv": "58f4c171504d33cf27388c30fae8320519faa6f74b498db6da0fb6a6c9cd1814",
     "tb/riscv/integration/soc/soc_dma_model.sv": "7139ebef347e76e4976eae0ad0a7270148c4fe8baa201d34dcea161ae6874a84",
     "tb/riscv/integration/soc/soc_sim_bus_pkg.sv": "87c9d6b2e2fb5939b1258e67d6ad2f8d778043d7fc26efa490c2ef71f231aa79",
     "tb/riscv/integration/soc/soc_sim_axi.svh": "df82e21871c56e699f5e324922112dbbb98e86f60cc3be064c9c94eb97d65abe",
-    "scripts/validate_soc_captures.py": "69f215f1753a4014f3a2d197cc3f5032f65e056ed6c266d5b36bf4072f2c0b94"
+    "scripts/validate_soc_captures.py": "69f215f1753a4014f3a2d197cc3f5032f65e056ed6c266d5b36bf4072f2c0b94",
+    "verif/formal/rv32_stall_operand_sva.sv": "f8fc340fe8e1731a84736b88032372637da3674dab882ae49dedf9c7a4500473"
   }
 }

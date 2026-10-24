@@ -6,6 +6,15 @@ checks**. The [compact evidence record](evidence/soc_end_to_end.json) includes
 per-clock counts, feature hashes and source identities. These are simulation
 checks, not functional-coverage closure percentages.
 
+The expanded run additionally hits **57/57 explicitly planned directed bins at
+each clock ratio**: four modes, two vector models, 16 mode/fault combinations,
+16 corresponding recoveries, 12 rejected descriptor classes, two discovery
+failures, four abort/strobe cases and reset-failure quarantine. These event
+bitmaps are checked by `scripts/check_soc_coverage.py`; they are not UVM covergroup,
+code or toggle coverage. Bound assertions check held instruction metadata and
+retention of forwarded rs1/rs2 operands through stalls. Abort corner tests cover
+zero WSTRB, upper-byte-only writes, low-byte abort before input and repeated abort.
+
 ## Scope
 
 The local Questa test joins the real RV32IM core, caches, BRAM backing memories,
