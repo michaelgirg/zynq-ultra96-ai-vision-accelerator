@@ -40,6 +40,8 @@ jobs:
         run: python -m unittest discover -s scripts -p test_vision_benchmark.py
       - name: Reject invalid reserved-DMA ELF layouts
         run: python -m unittest discover -s scripts -p test_vitis_layout.py
+      - name: Reject stale formal success after solver timeout
+        run: python -m unittest discover -s scripts -p test_mailbox_formal_runner.py
 
   pytorch-contracts:
     runs-on: ubuntu-latest

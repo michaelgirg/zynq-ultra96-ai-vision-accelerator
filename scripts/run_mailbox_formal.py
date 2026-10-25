@@ -28,6 +28,7 @@ def main() -> None:
     output = args.output.resolve()
     output.relative_to(ROOT)  # All generated derivatives stay inside the repo.
     output.mkdir(parents=True, exist_ok=True)
+    (output / 'result.json').unlink(missing_ok=True)  # Never leave a stale PASS after a timeout/failure.
     source = ROOT / 'rtl/riscv/soc/rv32_job_mailbox.sv'
     props = ROOT / 'verif/formal/rv32_mailbox_properties.svh'
     text = source.read_text()
