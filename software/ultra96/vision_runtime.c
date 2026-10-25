@@ -279,6 +279,7 @@ int vision_run_image(vision_device_t *d, const uint8_t image[784],
     memset(run, 0, sizeof(*run)); run->prediction = -1;
     if (d->quarantined) return run->diagnostics.result = VISION_NEEDS_RESET;
     if (!d->ready) return run->diagnostics.result = VISION_INVALID;
+    start = mark = now(d);
     /* Faults may arrive between jobs. Discover quarantine before changing or
      * cleaning any DMA buffer, not only later inside descriptor dispatch. */
     if (rd(d, SOC_MAILBOX_BASE + MAILBOX_REG_AXI_STATUS, &axi_status)) {
@@ -290,7 +291,6 @@ int vision_run_image(vision_device_t *d, const uint8_t image[784],
         (void)mailbox_snapshot(d, &run->diagnostics);
         return run->diagnostics.result = VISION_NEEDS_RESET;
     }
-    start = mark = now(d);
     run->diagnostics.job_id = ++d->next_job;
     run->diagnostics.stage = VISION_STAGE_PREPARE;
     for (int i = 0; i < 784; ++i) d->input.cpu[i] = image[i];

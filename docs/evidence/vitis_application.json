@@ -20,7 +20,7 @@
       "model": "baseline",
       "checkpoint_sha256": "4d68fb0cbcbf0c903a7dfd742d06085a08e35a1aec532d37e51086cb4bc2fbc4",
       "artifact": "vision_baseline.elf",
-      "sha256": "524d201f206cf9f4501a3cff6fb190d1e6ce374e32bfddd580b7bdb70e7441f5",
+      "sha256": "e424bd84e70ee1558d45157537138b61c76f0bd77d674f9a9a1a49b6fbe19c23",
       "allocated_sections_checked": 21,
       "input_address": "0x10000000",
       "output_address": "0x10001000"
@@ -29,7 +29,7 @@
       "model": "candidate",
       "checkpoint_sha256": "21cd1606e65999461ca14f87a6f9c71817a572e76b973c6ebfdda05e281d3e8a",
       "artifact": "vision_candidate.elf",
-      "sha256": "f257599a52be3e5f552c89a58cc61ca8104c4067c5a5cfea76fcdbab9496f446",
+      "sha256": "d174ff100bb12843fc0f8ad9453b15a1193ebb03f50835ec2e1798d8fd0bacd0",
       "allocated_sections_checked": 21,
       "input_address": "0x10000000",
       "output_address": "0x10001000"
@@ -53,7 +53,7 @@
     "software/ultra96/vision_demo_vitis.c": "4dacadaca34162b585c4ab40fbdee56b7589436d4b2b618d8ad8eddd21d543d2",
     "software/ultra96/vision_platform_vitis.c": "6242934d622ac4b9f1eaddb027b99ffb2ed6bd83f5992f530d44c3fc1ee26b2a",
     "software/ultra96/vision_platform_vitis.h": "5ad5f82a16aef023315a829cdb068f95a2b3321f7bd0cdba73ded09f522820f9",
-    "software/ultra96/vision_runtime.c": "cd40ca385497881e8705931a1b6ed3add22e17812b194ac096712c2880621de4",
+    "software/ultra96/vision_runtime.c": "24a850a6e6eb0fa0a89e14eba3d5678f487cd21bf6ae191f59c336ca4105a94d",
     "software/ultra96/vision_runtime.h": "26784a3623382c83bb22ed3790fa72f3a4f265d509c46816139723112456845d",
     "software/ultra96/vision_sim.c": "3e6ecc9e337f2e1968dd8952bacccd7a07c44919f5d6b15300911b166f22fb6f",
     "software/ultra96/vision_sim.h": "098336a1b9ce0185a69d2b78621e81f9ba2add8223c337eb257240da30d332eb"

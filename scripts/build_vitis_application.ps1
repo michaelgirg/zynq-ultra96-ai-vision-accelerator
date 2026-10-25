@@ -11,15 +11,19 @@ if (-not $Xsa) { $Xsa = Join-Path $root 'vivado/ultra96_v2_rv32_ai_vision_soc.xs
 if (-not $Workspace) { $Workspace = Join-Path $root 'vitis/vision_standalone' }
 if (-not (Test-Path -LiteralPath $VitisPath)) { throw 'Vitis launcher missing' }
 if (-not (Test-Path -LiteralPath $Xsa)) { throw 'XSA missing; complete Vivado implementation first' }
+$Workspace = [IO.Path]::GetFullPath($Workspace)
+$Xsa = (Resolve-Path -LiteralPath $Xsa).Path
+$VitisPath = (Resolve-Path -LiteralPath $VitisPath).Path
+$ToolchainBin = (Resolve-Path -LiteralPath $ToolchainBin).Path
 $previous = $env:VISION_VITIS_BUILD
 $runId = [Guid]::NewGuid().ToString()
 New-Item -ItemType Directory -Force -Path $Workspace | Out-Null
 Push-Location $Workspace
 try {
     $env:VISION_VITIS_BUILD = @{
-        workspace = [IO.Path]::GetFullPath($Workspace)
-        xsa = (Resolve-Path -LiteralPath $Xsa).Path
-        toolchain_bin = (Resolve-Path -LiteralPath $ToolchainBin).Path
+        workspace = $Workspace
+        xsa = $Xsa
+        toolchain_bin = $ToolchainBin
         run_id = $runId
     } | ConvertTo-Json -Compress
     & $VitisPath -s (Join-Path $PSScriptRoot 'build_vitis_application.py')

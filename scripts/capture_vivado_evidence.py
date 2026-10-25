@@ -32,6 +32,9 @@ def main() -> None:
                for index, (key, value) in enumerate(zip(keys, values))}
     if any(metrics[k] != 0 for k in ('setup_failing', 'hold_failing', 'pulse_failing')):
         raise RuntimeError('Implementation has failing timing endpoints')
+    clocks = dict(re.findall(r'^(clk_pl_[01])\s+\{[^}]+\}\s+\S+\s+([\d.]+)\s*$', timing, re.M))
+    if set(clocks) != {'clk_pl_0', 'clk_pl_1'}:
+        raise RuntimeError('Missing production control/stream clocks')
     skew_path = impl / 'u96v2rv32_wrapper_bus_skew_routed.rpt'
     slacks = [float(v) for v in re.findall(r'^\s+(?:Slow|Fast)\s+\S+\s+\S+\s+(\S+)\s*$',
                                           skew_path.read_text(), re.M)]
@@ -76,7 +79,7 @@ def main() -> None:
                 raise RuntimeError('Build mirror source differs from claimed commit: ' + name)
             hashes[name] = hashlib.sha256(reference).hexdigest()
     result = dict(tool='Vivado 2025.2', source_commit=commit, target='xczu3eg-sbva484-1-i',
-        clocks_mhz=dict(control=100.0, stream=150.015), timing=metrics,
+        clocks_mhz=dict(control=float(clocks['clk_pl_0']), stream=float(clocks['clk_pl_1'])), timing=metrics,
         bus_skew=dict(constraints=len(slacks), minimum_slack_ns=min(slacks)),
         cdc={rule: int(count) for rule, _, count in cdc}, methodology_findings=0,
         drc_warnings={rule: int(count) for rule, _, count in findings}, resources=resources,

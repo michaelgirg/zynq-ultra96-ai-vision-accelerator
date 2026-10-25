@@ -37,7 +37,7 @@
     "software/ultra96/vision_demo_vitis.c": "4dacadaca34162b585c4ab40fbdee56b7589436d4b2b618d8ad8eddd21d543d2",
     "software/ultra96/vision_platform_vitis.c": "6242934d622ac4b9f1eaddb027b99ffb2ed6bd83f5992f530d44c3fc1ee26b2a",
     "software/ultra96/vision_platform_vitis.h": "5ad5f82a16aef023315a829cdb068f95a2b3321f7bd0cdba73ded09f522820f9",
-    "software/ultra96/vision_runtime.c": "cd40ca385497881e8705931a1b6ed3add22e17812b194ac096712c2880621de4",
+    "software/ultra96/vision_runtime.c": "24a850a6e6eb0fa0a89e14eba3d5678f487cd21bf6ae191f59c336ca4105a94d",
     "software/ultra96/vision_runtime.h": "26784a3623382c83bb22ed3790fa72f3a4f265d509c46816139723112456845d",
     "software/ultra96/vision_sim.c": "3e6ecc9e337f2e1968dd8952bacccd7a07c44919f5d6b15300911b166f22fb6f",
     "software/ultra96/vision_sim.h": "098336a1b9ce0185a69d2b78621e81f9ba2add8223c337eb257240da30d332eb"
