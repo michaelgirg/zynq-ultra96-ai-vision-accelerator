@@ -114,6 +114,7 @@ jobs:
 
   bounded-formal:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -124,4 +125,11 @@ jobs:
       - name: Check real AXI master safety and detect intentional defect
         run: python scripts/run_bounded_formal.py --depth 32
       - name: Check mailbox ownership, interrupts and first-fault retention
-        run: python scripts/run_mailbox_formal.py --depth 32
+        run: |
+          pip install -r requirements-formal.txt
+          python scripts/run_mailbox_formal.py --yosys yowasp-yosys --depth 32 --timeout-seconds 600
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mailbox-bounded-formal
+          path: generated/experiments/mailbox-formal/*.log

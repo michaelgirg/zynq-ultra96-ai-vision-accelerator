@@ -57,3 +57,8 @@ the immediate assertions from `verif/formal/rv32_mailbox_properties.svh`.
 It never substitutes a behavioral model or edits the production RTL. Removing
 W1C or permitting first-fault overwrites makes the same check fail. Logs and
 mutants stay in `generated/experiments/mailbox-formal`; CI repeats both checks.
+The older distribution Yosys exceeded the 300-second solver budget without a
+counterexample. Mailbox CI therefore uses the pinned modern YoWASP/Yosys engine
+in `requirements-formal.txt`, the same 32-step bound and a 600-second per-solver
+budget. `--timeout-seconds` is configurable; timeout logs are retained and never
+reported as proof passes. The separate AXI-master lane still uses native Yosys.

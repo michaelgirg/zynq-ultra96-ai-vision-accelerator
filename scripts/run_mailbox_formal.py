@@ -15,10 +15,13 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--yosys')
     parser.add_argument('--depth', type=int, default=32)
+    parser.add_argument('--timeout-seconds', type=int, default=300)
     parser.add_argument('--output', type=Path, default=ROOT / 'generated/experiments/mailbox-formal')
     args = parser.parse_args()
     if not 16 <= args.depth <= 64:
         raise SystemExit('depth must be 16..64')
+    if not 30 <= args.timeout_seconds <= 1800:
+        raise SystemExit('timeout must be 30..1800 seconds')
     exe = args.yosys or shutil.which('yosys') or shutil.which('yowasp-yosys')
     if not exe:
         raise SystemExit('Yosys required')
@@ -52,8 +55,15 @@ def main() -> None:
         command = (f'read_verilog -formal -D SYNTHESIS -sv {prefix}{path.relative_to(ROOT).as_posix()}; '
                    'prep -top rv32_job_mailbox; flatten; ' + lower +
                    f'sat -verify -prove-asserts -set-assumes -seq {args.depth}')
-        result = subprocess.run([exe, '-p', command], cwd=ROOT, env=env,
-                                capture_output=True, text=True, timeout=300)
+        try:
+            result = subprocess.run([exe, '-p', command], cwd=ROOT, env=env,
+                                    capture_output=True, text=True, timeout=args.timeout_seconds)
+        except subprocess.TimeoutExpired as error:
+            partial = error.stdout or b''
+            if isinstance(partial, bytes):
+                partial = partial.decode(errors='replace')
+            (output / (name + '.log')).write_text(partial + '\nSOLVER TIMEOUT: no proof result\n')
+            raise SystemExit(f'Mailbox solver timed out: {name}; no pass/counterexample claimed') from None
         log = result.stdout + result.stderr
         (output / (name + '.log')).write_text(log)
         if negative:
