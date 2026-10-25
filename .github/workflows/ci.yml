@@ -20,6 +20,10 @@ jobs:
         run: python -m compileall -q scripts pytorch
       - name: Check generated artifacts, register map, and text hygiene
         run: python scripts/check_repo_consistency.py
+      - name: Check Vivado script dependencies without licensed tools
+        run: |
+          python scripts/check_vivado_dependencies.py
+          python -m unittest discover -s scripts -p test_vivado_dependencies.py
       - name: Validate vector predictor
         run: python scripts/validate_vector_predictor.py
       - name: Verify checkpoint, coefficients, classifier, and evaluation pairing
@@ -69,7 +73,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install Verilator
-        run: sudo apt-get update && sudo apt-get install --yes verilator
+        run: sudo apt-get update && sudo apt-get install --yes verilator tcl
+      - name: Test board detection and script orchestration without Vivado
+        run: tclsh tb/scripts/vivado_flow_test.tcl
       - name: Lint vector AXI4-Stream IP
         run: verilator --lint-only --sv --timing --Wall --Wno-fatal --top-module axis_preprocess_vector_axi_lite -f scripts/rtl_filelist.f
       - name: Lint dual-clock wrapper
