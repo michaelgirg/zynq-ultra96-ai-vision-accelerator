@@ -1,0 +1,138 @@
+{
+  "tool": "Vivado 2025.2",
+  "source_commit": "1f519a5efed3c5bd3efa12daf772d3d7b4cd4261",
+  "target": "xczu3eg-sbva484-1-i",
+  "clocks_mhz": {
+    "control": 100.0,
+    "stream": 150.015
+  },
+  "timing": {
+    "setup_wns_ns": 1.203,
+    "setup_tns_ns": 0.0,
+    "setup_failing": 0,
+    "setup_endpoints": 67201,
+    "hold_whs_ns": 0.008,
+    "hold_ths_ns": 0.0,
+    "hold_failing": 0,
+    "hold_endpoints": 67051,
+    "pulse_wpws_ns": 1.833,
+    "pulse_tpws_ns": 0.0,
+    "pulse_failing": 0,
+    "pulse_endpoints": 24273
+  },
+  "bus_skew": {
+    "constraints": 18,
+    "minimum_slack_ns": 5.843
+  },
+  "cdc": {
+    "CDC-3": 29
+  },
+  "methodology_findings": 0,
+  "drc_warnings": {
+    "DPIP-2": 43,
+    "DPOP-3": 2,
+    "DPOP-4": 49,
+    "REQP-1935": 2,
+    "RTSTAT-10": 1
+  },
+  "resources": {
+    "CLB LUTs": {
+      "used": 17790.0,
+      "available": 70560,
+      "percent": 25.21
+    },
+    "CLB Registers": {
+      "used": 22593.0,
+      "available": 141120,
+      "percent": 16.01
+    },
+    "Block RAM Tile": {
+      "used": 38.0,
+      "available": 216,
+      "percent": 17.59
+    },
+    "DSPs": {
+      "used": 49.0,
+      "available": 360,
+      "percent": 13.61
+    }
+  },
+  "power": {
+    "estimated_watts": 2.126,
+    "confidence": "Medium",
+    "simulation_activity": false,
+    "measured": false
+  },
+  "artifacts_sha256": {
+    "u96v2rv32_wrapper.bit": "668131d1bfdd26d0b230177f2114ed909863ad2348d1ca6dc1375f474b92e4b2",
+    "ultra96_v2_rv32_ai_vision_soc.xsa": "dd3b483b3f2420d8f2975a071e33e4170ced1e9352445941baa4fbe7f7864f36"
+  },
+  "xsa_embedded_bit_matches": true,
+  "physical_board_execution": false,
+  "source_sha256_lf": {
+    "rtl/axis_conv3x3_parallel_preprocess.sv": "2cb62ca72dde35e5cfb3ee47454d8a29ab521e6272ea4db5262f03cbf15eb7b9",
+    "rtl/axis_conv3x3_preprocess.sv": "2be7c146c21d3be1653a6881db5297b8f5594f976047ff49df61f9cf4d9dcdd6",
+    "rtl/axis_conv3x3_scalable_benchmark_top.sv": "393f3a06140254d14943dae499cfa45c3d9efa53c9856624da53e0f7259c2ba2",
+    "rtl/axis_conv3x3_scalable_preprocess.sv": "72e9f7f0d49087ad399f90151aef9e5b030691731183789074090afd0aae5ff9",
+    "rtl/axis_conv3x3_vector4_preprocess.sv": "38e3f5eed467572f30dd61c500a3cf04a5a10e7890e8f9232868f2e3cefe8ff3",
+    "rtl/axis_preprocess_axi_lite.sv": "c898e3fbea85328715a1da487e142bdc9213a67b2c33a7537ddd840f7e7e6eff",
+    "rtl/axis_preprocess_if.sv": "3e6dead64d36c69952019189d3b5bd9a9743e7d0772fdd8845abd500ba7d146f",
+    "rtl/axis_preprocess_pkg.sv": "a50747726b30fe65f0345ec30ff6202023f21b359c1253fe781a58660eda9774",
+    "rtl/axis_preprocess_vector_axi_lite.sv": "d0cfd7fcef812bdd764e502b920f122265ff654ecb5c822bc0ce785f92163b2b",
+    "rtl/axis_preprocess_vector_cdc.sv": "af02b9fa714e4dbae09fb56536e103ee6c39406b4fea0e29907ffd91172894cf",
+    "rtl/axis_sobel_preprocess.sv": "dfdfebc7525d323ebbd369d7e0119072fe6b23a6e486534a20a38198211ed322",
+    "rtl/axis_threshold_preprocess.sv": "a04b1b5fb6e5caaded0bdff6ba4c40d1dfb9152735f472373bd88de487d02868",
+    "rtl/image_preprocess_axi_lite.sv": "1a18fc7fa086d92eeb6babcc3a3f8bd42254eca725072fd12074e7079e89085a",
+    "rtl/image_preprocess_buffered.sv": "0a0cd1c7a94e82f3a6e37335f3a1570825f772f04b9ebfe4fe31cd746e40c4d3",
+    "rtl/image_preprocess_engine.sv": "6d601d44f95c22f424cb4ba4ef5b8e5ae786da5c34fa9a781ba6b8560ccba94d",
+    "rtl/image_preprocess_reg_block.sv": "3af7a425a11311d1eaf807237e9ddaea8a3b5a4682e6b0b8d648119ab6c765e6",
+    "rtl/image_sobel_engine.sv": "e2ab19348b62ff200ed7aef570882325c3efc238ccc8a61b348c25772d1a4c6a",
+    "rtl/riscv/common/alu.sv": "3855fc8ab8f6a92d4be1d74d43be67523edf43c2a37f89d7e402c51101e48764",
+    "rtl/riscv/common/branch_unit.sv": "50ed03b7ec5b8f48dd4a9726004cc7d4be4047e545d4f554ab20eeabaa044158",
+    "rtl/riscv/common/decoder.sv": "02e61669dbcf2e7b81077094ef8888dee9c7b26d917183f2de207a96473349d6",
+    "rtl/riscv/common/dmem.sv": "49ed25218f939b390b7e52a598c13837c16795613489bab91fee42afb96f415e",
+    "rtl/riscv/common/imem.sv": "9a2eb836cfcf6c2c5e45faa1a70d6365abe153375dcdc01874b71c5963423ab5",
+    "rtl/riscv/common/imm_gen.sv": "531e671c337ad0b98ff548bd0ab96cfa662fbf991c64fd126e467d0393f9be38",
+    "rtl/riscv/common/pc.sv": "35cc7bc1b9e56d796e6fd1b5e21dccf32e024c61392bc9856e96bb27a8d5fa4c",
+    "rtl/riscv/common/regfile.sv": "af0c37f378caac9817f7a4f51a8f0e06fdfa683e8daf0965d049b1bc8477aa20",
+    "rtl/riscv/common/rv32i_pkg.sv": "9062c4c8f2fb06799cd342d555e253da973da3a19d836907b461f4dfc6682b5b",
+    "rtl/riscv/pipeline/core_pipeline.sv": "a73eb1ff9f3b2bfd94a3f3ee84e4eec9939e4ebbfb2339a0865b13681363d407",
+    "rtl/riscv/pipeline/dcache.sv": "a8ead2d30d042c04f336f469b3e3142c7bc573ce9c40a3d13e1e61fe04e1126e",
+    "rtl/riscv/pipeline/div_unit.sv": "b115d4d86817455b0c38a57c7a8e1aaa392ec857afb085c2379006574e785065",
+    "rtl/riscv/pipeline/ex_mem_reg.sv": "de29d7d3122a58225adcaad5b4c894d560763f3ca7bef15112ca4f11abfc8738",
+    "rtl/riscv/pipeline/forwarding_unit.sv": "8d0b382c00690385c79e6a93f2fb027c2e659ac1bdf0413064d156fe6e6a3a45",
+    "rtl/riscv/pipeline/icache.sv": "e611a2299f9a3e09c881b904541f67c8a6cbcbd222ecff10c6710e9dffb8abb6",
+    "rtl/riscv/pipeline/id_ex_reg.sv": "e9a1484c3caceae0eb5af1713857d2731214297f2c10fc0f5b240b800ca13101",
+    "rtl/riscv/pipeline/if_id_reg.sv": "016de232b06ad05ed32afd64feb996fd14e5fd3e1a5e2438653441ed1a828972",
+    "rtl/riscv/pipeline/load_use_hazard_unit.sv": "f07570c4da2b27fb3119ba8e1192809949113f9345e40f7d3eb6928bdc3abff4",
+    "rtl/riscv/pipeline/mem_wb_reg.sv": "b3a42097f7cd5cf0a80d32bdd0f74f214e512f862720c36092b8e839d66e4e4f",
+    "rtl/riscv/pipeline/mul_unit.sv": "fedde44bbf898260a22923f31f7b17e8361be55b2c22f9edb0a54ce102b58055",
+    "rtl/riscv/pipeline/muldiv_unit.sv": "c84b1119a9c23042185dbaf64a708676d9b70a90c51b0c77e3dfabad8cc12372",
+    "rtl/riscv/pipeline/pipeline_control.sv": "193907020b35f659b2948d7e33a4d0d65a0eff7273653b1ac8e86d1877a1703b",
+    "rtl/riscv/pipeline/plru.sv": "7b983b8fbd14a9b50ca325cd9fa1a70856aa3bf9488d57835c99e527b5da551b",
+    "rtl/riscv/pipeline/slow_line_memory.sv": "c8d6a9254a0d0df147f2471d820977c1d4965722203365ac119c78bd410e1c4a",
+    "rtl/riscv/single_cycle/core_single_cycle.sv": "d989878ca1edd7c79a4611717a2556ecf004c05e67261bcef9de5c750667c3b5",
+    "rtl/riscv/single_cycle/muldiv_single_cycle.sv": "84fea3fd87654d9adf330b0ffbf4e314a78aa21ccbe9f279f5efd70af6442e25",
+    "rtl/riscv/soc/rv32_axi_lite_master.sv": "acdba57c7b9122e570e956fec4a994f816f5c9bc94d2223c6a3d80334992095e",
+    "rtl/riscv/soc/rv32_axi_memory_portal.sv": "3ab64492d023986298c2ac29369d12fb71b1beb6ea9a59611350912e0befeab3",
+    "rtl/riscv/soc/rv32_job_mailbox.sv": "c9a47f7b42d0e4c4579cadc2a2d9f6811b58d5b58d7419c566031eff47419931",
+    "rtl/riscv/soc/rv32_mmio_router.sv": "863e333095cdff627176730bc28d34fb7df0dbbce5ab9cfab2a4353968fbd70d",
+    "rtl/riscv/soc/rv32_pipeline_axi_subsystem.sv": "40db09c0690730cca66a15cbcd20e646c273e29b617eecac992271e201ae6475",
+    "rtl/riscv/soc/rv32_pipeline_axi_top.sv": "da8e13cacdf518412e623201612083fdda5e37f7ccb03afe871a9b4d6e191d0f",
+    "rtl/riscv/soc/soc_address_map_pkg.sv": "c90c20be1d08bbfcbd417ed8cf1c727d39f35a8bdd8868b965694c285d535817",
+    "rtl/sobel_core.sv": "95fcddd96d860854cd48c9a16ee6af70ca2f5ef31d12bf7d51486a3a1b986033",
+    "rtl/threshold_core.sv": "3b4e54a6b2e309dfa5f356637eb1e8222d6f075b6faaa964b044c7e3d999480c",
+    "vivado/constraints/scalable_conv_100mhz.xdc": "f5fc5777d6946b01e40a54c1c13f4a55e17433fe38384a84328cd80ffbd1624a"
+  },
+  "report_sha256": {
+    "cdc.rpt": "2aef1c6bfb44e2afc6619db0d25b00a5a139cace11cd3f53bf8de256f5edc807",
+    "clock_interaction.rpt": "007b824e080b8d2742359d54899a825cffdbd26b18a5ed5a295b4fffabd6dd7e",
+    "drc.rpt": "0b09bab5c638e8b1df6d922a71c801967f8ab11ec53498af1eef32953d6891bd",
+    "hierarchical_utilization.rpt": "ce5b702803796bb96e6ad8c6d3451a216cfb45b3abcdfce5b5ad18bb91a2b70e",
+    "ip_status.rpt": "824e43bfc175231653249021244c7e466ffd99b76370637185bfd0f6da567800",
+    "methodology.rpt": "beccf2d2cd45fa9324decb2149a0ea72c2f2e91d9555cf60e0ee767e200a5de6",
+    "power.rpt": "f71d745d516725ccd81dcd0d835834f96ab45e4d967288f48efea1b650b7db0c",
+    "timing_summary.rpt": "fbb24866d2f9bd5da4fb6a5205729d2724bf6c001bb038d8a1c23685fd8a8973",
+    "utilization.rpt": "eca1a2a683a0a70d12ae5d4e6cf7e183ba4be05bf6ed960ee7929b49223e48b3"
+  }
+}

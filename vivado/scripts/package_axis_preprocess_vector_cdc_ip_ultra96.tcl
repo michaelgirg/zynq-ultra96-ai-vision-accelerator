@@ -23,7 +23,10 @@ if {[file exists $ip_root]} {
     file delete -force $ip_root
 }
 
-create_project -in_memory axis_preprocess_v2_u96_packager -part $package_part_name
+# IP packager requires project mode; an in-memory project is non-project mode
+# and triggers Ipptcl 7-1601 (scheduled to become an error in future releases).
+create_project -force axis_preprocess_v2_u96_packager \
+    [file join $repo_root "vivado/axis_packager_vivado"] -part $package_part_name
 
 set rtl_files [list \
     [file join $repo_root "rtl/sobel_core.sv"] \

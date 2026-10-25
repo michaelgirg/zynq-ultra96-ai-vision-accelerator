@@ -6,6 +6,14 @@ from check_vivado_dependencies import check
 
 
 class DependencyTests(unittest.TestCase):
+    def test_packagers_use_supported_project_mode(self):
+        scripts = Path(__file__).resolve().parents[1] / 'vivado/scripts'
+        for name in ('package_rv32_control_soc_ip.tcl',
+                     'package_axis_preprocess_vector_cdc_ip_ultra96.tcl'):
+            source = (scripts / name).read_text()
+            self.assertNotIn('create_project -in_memory', source)
+            self.assertIn('create_project -force', source)
+
     def test_missing_shared_helper_and_rtl(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
