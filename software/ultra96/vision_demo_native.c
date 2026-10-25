@@ -49,7 +49,7 @@ int main(int argc, char **argv)
     memcpy(front.shift, vector_conv_shift, sizeof(front.shift));
     memcpy(front.relu, vector_conv_relu_enable, sizeof(front.relu));
     vision_print_csv_header();
-    for (int control = 0; control < 2; ++control) {
+    for (int control = 0; control < 3; ++control) {
         vision_sim_init(&sim);
         uint32_t capture[784];
         if (argc == 5) {
@@ -58,9 +58,10 @@ int main(int argc, char **argv)
         }
         vision_platform_t p = vision_sim_platform(&sim);
         if (vision_device_init(&d, &p, vision_sim_input(&sim), vision_sim_output(&sim),
-                (enum vision_control)control, p.ticks_per_second, 100000) ||
+                control == 1 ? VISION_ARM_CONTROL : VISION_RV32_CONTROL, p.ticks_per_second, 100000) ||
             vision_device_boot(&d, rv32_controller_imem_words, RV32_CONTROLLER_IMEM_WORD_COUNT,
                 rv32_controller_dmem_words, RV32_CONTROLLER_DMEM_WORD_COUNT, &front)) return 5;
+        if (control == 2 && vision_device_set_irq(&d, 1)) return 5;
         for (unsigned iteration = 0; iteration <= count; ++iteration) {
             int result = vision_run_image(&d, pixels, &vector_classifier_model, &run);
             vision_print_run(&d, 0, iteration, iteration == 0, &run);

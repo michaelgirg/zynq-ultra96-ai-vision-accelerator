@@ -3,21 +3,21 @@
   "physical_hardware": false,
   "rv32_firmware_execution": false,
   "rtl_capture_replay": true,
-  "dma_frames": 96,
-  "benchmark_rows": 144,
+  "dma_frames": 144,
+  "benchmark_rows": 192,
   "sanitizers": false,
   "speedup_claimed": false,
   "models": [
     {
       "model": "baseline",
       "checkpoint_sha256": "4d68fb0cbcbf0c903a7dfd742d06085a08e35a1aec532d37e51086cb4bc2fbc4",
-      "runtime_checks": 110,
+      "runtime_checks": 160,
       "images": 8
     },
     {
       "model": "candidate",
       "checkpoint_sha256": "21cd1606e65999461ca14f87a6f9c71817a572e76b973c6ebfdda05e281d3e8a",
-      "runtime_checks": 110,
+      "runtime_checks": 160,
       "images": 8
     }
   ],
@@ -26,20 +26,20 @@
     "software/ultra96/rv32_controller.h": "457e236d0cdbe0a6ae5d172b42f4e375c2a582ab080ac165c42de692afb271ef",
     "software/ultra96/test_rv32_controller.c": "31293ea8f5e5d8199809dceb4c1dbc7ce28af08e7564bba64b06e5d1213c7511",
     "software/ultra96/test_vector_classifier.c": "582e11de3c09fa522c1b5f078fdaea19ebde85824888ae6df6214ebd8e369b2a",
-    "software/ultra96/test_vision_runtime.c": "7235f6453f0dcd872facbc285e5a84ed5edbc1637df98a3e966dece0a2b59ab4",
+    "software/ultra96/test_vision_runtime.c": "5172b5ec7f7aff7471d89ef443b5c8884eb2983365a3d3b7cdb50827fd10cc95",
     "software/ultra96/vector_classifier.c": "8e0dce2a74aa0bafb62bf69bb15feec3fa90b22cb6607dcbfbd4659018746bf2",
     "software/ultra96/vector_classifier.h": "953c70df2b8b5157a7e289244a72df566e8e336792c96880e8fb8db67c21af50",
     "software/ultra96/vector_front_reference.c": "255d9920a67ab887dd031b575aaa0c91b8ef738b55de9447dfba06011a1448b6",
     "software/ultra96/vector_front_reference.h": "5a766974d601f856427778d2bce898a5550201652e926e55a43871c85e364daa",
-    "software/ultra96/vision_benchmark.c": "79028d59ed39b1c75bcbdf3732b45411a266067bbff928b7d0c6c23a3f04594a",
+    "software/ultra96/vision_benchmark.c": "0c8c5952400aadc2b3ebcb863a7fdc6a63212d224cc5c175d900f7432ef5e376",
     "software/ultra96/vision_benchmark.h": "f4ead5da5c2d9dc09805515495b8a45d385e82c3e3feb55ce6b1f2c9c115c2b4",
-    "software/ultra96/vision_demo_native.c": "d30ff228444ecdcd52eb03bfdc62e444722f494e2a36e9f7669a4d410f1a4bae",
-    "software/ultra96/vision_demo_vitis.c": "5699bbf6f030e5330b5b3e40bb44b4b4f0b258aae9fe2c03092d060b96662754",
-    "software/ultra96/vision_platform_vitis.c": "858638b5017ddf473934121b9d54e027714b73da55d698c98c4430dcaf5936e8",
-    "software/ultra96/vision_platform_vitis.h": "71eaedcd18ae3d3b317628ae852331b249342def926fa586b65385d9c6a7ced0",
-    "software/ultra96/vision_runtime.c": "207b19bbe5c172432b2a05cc23240d90b3041c1d652b09e81d856082c99e2bb1",
-    "software/ultra96/vision_runtime.h": "9d5074d0fd20fa481c721b27c20fb0e6c52ce25eccf3dc6d60d7186c8d4ed3a8",
-    "software/ultra96/vision_sim.c": "3dd67642a81fcbd49704c56a066f9d70995e922bdf46efc502386ef5f6c74090",
-    "software/ultra96/vision_sim.h": "29494ca7d094b4a844d5d1a3c62d771fc761f40c57a8fbde7c5815b40ea2ffd2"
+    "software/ultra96/vision_demo_native.c": "89dd0b715ac68b76b8fd543228ccde600127b22b2a583ea3d671806fbbec9306",
+    "software/ultra96/vision_demo_vitis.c": "4dacadaca34162b585c4ab40fbdee56b7589436d4b2b618d8ad8eddd21d543d2",
+    "software/ultra96/vision_platform_vitis.c": "6242934d622ac4b9f1eaddb027b99ffb2ed6bd83f5992f530d44c3fc1ee26b2a",
+    "software/ultra96/vision_platform_vitis.h": "5ad5f82a16aef023315a829cdb068f95a2b3321f7bd0cdba73ded09f522820f9",
+    "software/ultra96/vision_runtime.c": "cd40ca385497881e8705931a1b6ed3add22e17812b194ac096712c2880621de4",
+    "software/ultra96/vision_runtime.h": "26784a3623382c83bb22ed3790fa72f3a4f265d509c46816139723112456845d",
+    "software/ultra96/vision_sim.c": "3e6ecc9e337f2e1968dd8952bacccd7a07c44919f5d6b15300911b166f22fb6f",
+    "software/ultra96/vision_sim.h": "098336a1b9ce0185a69d2b78621e81f9ba2add8223c337eb257240da30d332eb"
   }
 }

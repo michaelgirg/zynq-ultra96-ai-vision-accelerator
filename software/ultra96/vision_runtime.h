@@ -18,6 +18,11 @@ typedef struct {
     uint64_t ticks_per_second;
     const char *backend_name;
     int physical_hardware;
+    /* Optional single-owner IRQ adapter. prepare runs while peripheral masked.
+     * wait returns latched causes (ISR W1C only, never job ACK), or a deadline.
+     * Both timer and iteration bounds are required; no unbounded WFI contract. */
+    int (*irq_prepare)(void *);
+    int (*irq_wait)(void *, uint32_t *, uint64_t, uint32_t);
 } vision_platform_t;
 
 typedef struct {
@@ -59,7 +64,7 @@ typedef struct {
     uint64_t timeout_ticks;
     uint32_t poll_limit, next_job;
     enum vision_control control;
-    int ready, quarantined;
+    int ready, quarantined, use_irq;
 } vision_device_t;
 
 int vision_device_init(vision_device_t *, const vision_platform_t *,
@@ -67,6 +72,7 @@ int vision_device_init(vision_device_t *, const vision_platform_t *,
     enum vision_control, uint64_t timeout_ticks, uint32_t poll_limit);
 int vision_device_boot(vision_device_t *, const uint32_t *imem, size_t imem_words,
     const uint32_t *dmem, size_t dmem_words, const vision_front_t *);
+int vision_device_set_irq(vision_device_t *, int enable);
 int vision_run_image(vision_device_t *, const uint8_t image[784],
     const vector_classifier_model_t *, vision_run_t *);
 const char *vision_stage_name(enum vision_stage);

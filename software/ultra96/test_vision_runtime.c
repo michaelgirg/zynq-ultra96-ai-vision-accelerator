@@ -135,6 +135,51 @@ int main(void)
     vision_dma_buffer_t input = vision_sim_input(&sim), output = vision_sim_output(&sim);
     output.physical = input.physical;
     CHECK(vision_device_init(&device, &p, input, output, VISION_RV32_CONTROL, 10, 10) == VISION_INVALID);
+    CHECK(setup(VISION_ARM_CONTROL) == 0);
+    CHECK(vision_device_set_irq(&device, 1) == VISION_INVALID);
+    CHECK(setup(VISION_RV32_CONTROL) == 0);
+    device.platform.irq_wait = NULL;
+    CHECK(vision_device_set_irq(&device, 1) == VISION_INVALID);
+    CHECK(setup(VISION_RV32_CONTROL) == 0);
+    CHECK(vision_device_set_irq(&device, 1) == 0);
+    /* A stale completion must be cleared before a newly submitted descriptor. */
+    sim.mailbox[MAILBOX_REG_IRQ_STATUS/4] = 3;
+    CHECK(vision_run_image(&device, image, &vector_classifier_model, &run) == 0);
+    CHECK(sim.irq_waits == 1 && sim.irq_deliveries == 1 && run.diagnostics.polls == 0);
+    CHECK(sim.mailbox[MAILBOX_REG_IRQ_ENABLE/4] == 0 && sim.mailbox[1] == 0);
+    CHECK(vision_device_set_irq(&device, 0) == 0);
+    CHECK(vision_run_image(&device, image, &vector_classifier_model, &run) == 0);
+    CHECK(sim.irq_waits == 1); /* Switching modes does not reboot the controller. */
+    for (int fault = SIM_MM2S; fault <= SIM_PACKET; ++fault) {
+        CHECK(setup(VISION_RV32_CONTROL) == 0);
+        CHECK(vision_device_set_irq(&device, 1) == 0);
+        sim.fault = (enum vision_sim_fault)fault;
+        CHECK(vision_run_image(&device, image, &vector_classifier_model, &run) == VISION_JOB_FAILED);
+        CHECK(run.prediction == -1 && sim.invalidates == 0 && !device.quarantined);
+        sim.fault = SIM_NONE;
+        CHECK(vision_run_image(&device, image, &vector_classifier_model, &run) == 0);
+    }
+    for (int fault = SIM_IRQ_LOST; fault <= SIM_IRQ_CONFLICT; ++fault) {
+        CHECK(setup(VISION_RV32_CONTROL) == 0);
+        CHECK(vision_device_set_irq(&device, 1) == 0);
+        sim.fault = (enum vision_sim_fault)fault;
+        sim.clock_stopped = 1; device.poll_limit = 8;
+        CHECK(vision_run_image(&device, image, &vector_classifier_model, &run) ==
+            (fault == SIM_IRQ_LOST ? VISION_DEADLINE : VISION_VERIFY_ERROR));
+        CHECK(run.prediction == -1 && sim.invalidates == 0 && device.quarantined);
+        CHECK(sim.mailbox[MAILBOX_REG_IRQ_ENABLE/4] == 0);
+    }
+    CHECK(setup(VISION_RV32_CONTROL) == 0);
+    CHECK(vision_device_set_irq(&device, 1) == 0);
+    sim.fault = SIM_BUS_TIMEOUT;
+    CHECK(vision_run_image(&device, image, &vector_classifier_model, &run) == VISION_NEEDS_RESET);
+    CHECK(sim.unsafe_fault_reads == 0 && sim.invalidates == 0 && sim.mailbox[1] == 2);
+    CHECK(setup(VISION_RV32_CONTROL) == 0);
+    sim.input[0] = 0x55;
+    sim.mailbox[MAILBOX_REG_AXI_STATUS/4] = MAILBOX_AXI_QUARANTINED;
+    CHECK(vision_run_image(&device, image, &vector_classifier_model, &run) == VISION_NEEDS_RESET);
+    CHECK(sim.input[0] == 0x55 && !sim.input_clean && !sim.output_clean);
+    CHECK(sim.launches == 0 && sim.invalidates == 0 && device.quarantined);
     output = vision_sim_output(&sim); output.cpu++;
     CHECK(vision_device_init(&device, &p, input, output, VISION_RV32_CONTROL, 10, 10) == VISION_INVALID);
     output = vision_sim_output(&sim); output.physical = 0xfffffc00u;

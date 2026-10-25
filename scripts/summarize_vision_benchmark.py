@@ -41,7 +41,7 @@ def summarize(rows: list[dict]) -> dict:
     speedups = []
     for key, accelerated in groups.items():
         model, backend, domain, path = key
-        if domain != "board" or path not in ("rv32-control", "arm-control"):
+        if domain != "board" or path not in ("rv32-control", "rv32-irq", "arm-control"):
             continue
         software = groups.get((model, backend, domain, "software"))
         if not software:
