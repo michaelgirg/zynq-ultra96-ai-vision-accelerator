@@ -30,7 +30,8 @@ def main() -> None:
     args = parser.parse_args()
     log = args.log.read_text()
     expected = {
-        "mailbox_checks": r"PASS: rv32_job_mailbox_tb \(265 checks\)",
+        "mailbox_checks": r"PASS: rv32_job_mailbox_tb \(15885 checks\)",
+        "mailbox_random": r"PASS: randomized mailbox 20 seeds / 320 jobs",
         "watchdog_checks": r"PASS: rv32_axi_watchdog_tb \(184 checks; 6/6 channel scenarios\)",
         "baseline_axi": r"PASS: RV32 AXI4-Lite master \(2060 checks, 55 writes, 51 reads, 12 faults\)",
     }
@@ -40,7 +41,8 @@ def main() -> None:
         raise ValueError("missing/changed test counts; review the verification contract")
     report = {
         "simulator": "Questa Intel Starter FPGA Edition 2021.2", "result": "PASS",
-        "mailbox_checks": 265, "watchdog_checks": 184, "baseline_axi_checks": 2060,
+        "mailbox_checks": 15885, "mailbox_random_seeds": 20, "mailbox_random_jobs": 320,
+        "watchdog_checks": 184, "baseline_axi_checks": 2060,
         "watchdog_channel_scenarios": 6, "watchdog_test_cycles": 8,
         "watchdog_production_default_cycles": 1000000,
         "mailbox_version": "0x00010000",

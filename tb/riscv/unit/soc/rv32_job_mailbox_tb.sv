@@ -28,6 +28,8 @@ module rv32_job_mailbox_tb;
     logic [63:0] cycle_count = 0, expected_submit = 0, expected_claim = 0, expected_end = 0;
     logic was_bvalid = 0;
     integer checks = 0;
+    bit random_delays = 0;
+    initial begin #100000000; $fatal(1, "mailbox test watchdog"); end
 
     always #5 clk = ~clk;
 
@@ -89,7 +91,7 @@ module rv32_job_mailbox_tb;
                 awvalid = 1'b1;
                 do @(posedge clk); while (!awready);
                 @(negedge clk); awvalid = 1'b0;
-                repeat (2) @(posedge clk);
+                repeat (random_delays ? $urandom_range(0, 5) : 2) @(posedge clk);
                 @(negedge clk); wvalid = 1'b1;
                 do @(posedge clk); while (!wready);
                 @(negedge clk); wvalid = 1'b0;
@@ -98,14 +100,14 @@ module rv32_job_mailbox_tb;
                 wvalid = 1'b1;
                 do @(posedge clk); while (!wready);
                 @(negedge clk); wvalid = 1'b0;
-                repeat (2) @(posedge clk);
+                repeat (random_delays ? $urandom_range(0, 5) : 2) @(posedge clk);
                 @(negedge clk); awvalid = 1'b1;
                 do @(posedge clk); while (!awready);
                 @(negedge clk); awvalid = 1'b0;
             end
             wait (bvalid);
             check(bresp == expected_response, "write response");
-            repeat (2) @(posedge clk);
+            repeat (random_delays ? $urandom_range(1, 6) : 2) @(posedge clk);
             check(bvalid && bresp == expected_response, "write response backpressure");
             @(negedge clk); bready = 1'b1;
             @(posedge clk);
@@ -127,7 +129,7 @@ module rv32_job_mailbox_tb;
             wait (rvalid);
             check(rdata == expected_data, "read data");
             check(rresp == expected_response, "read response");
-            repeat (2) @(posedge clk);
+            repeat (random_delays ? $urandom_range(1, 6) : 2) @(posedge clk);
             check(rvalid && rdata == expected_data, "read response backpressure");
             @(negedge clk); rready = 1'b1;
             @(posedge clk);
@@ -274,6 +276,60 @@ module rv32_job_mailbox_tb;
         axi_read(12'h070, 0, 0);
         axi_read(12'h034, 0, 0);
         check(!irq, "system reset clears diagnostic/IRQ state");
+
+        // Reproducible randomized lifecycle/ownership stress. Independent
+        // bus readbacks score state and counts; no hierarchical DUT peeks.
+        random_delays = 1;
+        for (int seed = 1; seed <= 20; seed++) begin : seeds
+            int unsigned state, ignored, completed, failures, first_job, first_code;
+            state = seed; ignored = $urandom(state);
+            completed = 0; failures = 0; first_job = 0; first_code = 0;
+            @(negedge clk); resetn = 0; axi_timeout = 0; axi_quarantined = 0;
+            repeat (3) @(negedge clk); resetn = 1;
+            for (int job = 1; job <= 16; job++) begin : jobs
+                logic fail_job;
+                logic [2:0] mask;
+                logic [31:0] code, id;
+                fail_job = 1'($urandom_range(0, 1));
+                mask = 3'($urandom_range(0, 7));
+                code = $urandom_range(1, 7); id = 32'(seed*100 + job);
+                axi_write('h038, {29'd0, mask}, 0, 1'($urandom));
+                axi_write('h010, 3136, 0, 1'($urandom));
+                axi_write('h01c, id, 0, 1'($urandom));
+                axi_write('h000, 1, 0, 1'($urandom));
+                axi_write('h01c, ~id, 2, 1'($urandom));
+                axi_read('h01c, id, 0);
+                axi_write('h000, 2, 0, 1'($urandom));
+                axi_write('h018, $urandom, 2, 1'($urandom), 4'h1);
+                axi_write('h024, code, 0, 1'($urandom));
+                axi_write('h000, fail_job ? 8 : 4, 0, 1'($urandom));
+                if (fail_job) begin
+                    failures++;
+                    if (!first_job) begin first_job = id; first_code = code; end
+                end else completed++;
+                axi_read('h004, fail_job ? 8 : 4, 0);
+                axi_read('h060, completed, 0);
+                axi_read('h064, failures, 0);
+                axi_read('h074, first_job, 0);
+                axi_read('h078, first_code, 0);
+                check(irq == (fail_job ? mask[1] : mask[0]), "random IRQ mask/terminal cause");
+                axi_write('h034, 3, 0, 1'($urandom));
+                check(!irq, "random W1C without job ACK");
+                axi_read('h004, fail_job ? 8 : 4, 0);
+                axi_write('h000, 16, 0, 1'($urandom));
+                axi_read('h004, 0, 0);
+            end
+            // Independent AXI fault after firmware first-fault must not erase
+            // the earlier diagnosis. A coordinated reset starts the next seed.
+            @(negedge clk); axi_timeout = 1; axi_quarantined = 1;
+            repeat (2) @(negedge clk);
+            axi_read('h074, first_job, 0);
+            axi_read('h078, first_code, 0);
+            axi_write('h034, 7, 0, 1'($urandom));
+            axi_read('h090, 3, 0);
+            axi_write('h000, 1, 2, 1'($urandom));
+        end
+        $display("PASS: randomized mailbox 20 seeds / 320 jobs; split AW/W, stalls, faults, W1C and reset");
 
         $display("PASS: rv32_job_mailbox_tb (%0d checks)", checks);
         $finish;
