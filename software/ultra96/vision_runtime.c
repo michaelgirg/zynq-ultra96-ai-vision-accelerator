@@ -172,7 +172,7 @@ static int arm_recover(vision_device_t *d)
 
 static int dispatch(vision_device_t *d, vision_diagnostics_t *s)
 {
-    uint32_t status, result, error;
+    uint32_t status, result, error, causes = 0;
     uint64_t start = now(d);
 #define WRITE(base, offset, v) do { if (wr(d, (base)+(offset), (v))) return VISION_IO_ERROR; } while (0)
     if (d->control == VISION_RV32_CONTROL) {
@@ -180,6 +180,14 @@ static int dispatch(vision_device_t *d, vision_diagnostics_t *s)
         if (status & MAILBOX_AXI_QUARANTINED) { d->quarantined = 1; return VISION_NEEDS_RESET; }
         if (rd(d, SOC_MAILBOX_BASE + MAILBOX_REG_STATUS, &status)) return VISION_IO_ERROR;
         if (status != 0) return VISION_BUSY;
+        WRITE(SOC_MAILBOX_BASE, MAILBOX_REG_IRQ_ENABLE, 0);
+        if (d->use_irq) {
+            if (d->platform.irq_prepare(d->platform.context)) return VISION_IO_ERROR;
+            WRITE(SOC_MAILBOX_BASE, MAILBOX_REG_IRQ_STATUS, 7);
+            if (rd(d, SOC_MAILBOX_BASE + MAILBOX_REG_AXI_STATUS, &status)) return VISION_IO_ERROR;
+            if (status & MAILBOX_AXI_QUARANTINED) { d->quarantined = 1; return VISION_NEEDS_RESET; }
+            WRITE(SOC_MAILBOX_BASE, MAILBOX_REG_IRQ_ENABLE, 7);
+        }
         WRITE(SOC_MAILBOX_BASE, MAILBOX_REG_INPUT_ADDR, d->input.physical);
         WRITE(SOC_MAILBOX_BASE, MAILBOX_REG_OUTPUT_ADDR, d->output.physical);
         WRITE(SOC_MAILBOX_BASE, MAILBOX_REG_TRANSFER_BYTES, VISION_FRAME_BYTES);
@@ -202,6 +210,14 @@ static int dispatch(vision_device_t *d, vision_diagnostics_t *s)
         WRITE(SOC_AXI_DMA_BASE, DMA_MM2S_LENGTH, VISION_FRAME_BYTES);
     }
     s->stage = VISION_STAGE_WAIT;
+    if (d->use_irq) {
+        int waited = d->platform.irq_wait(d->platform.context, &causes,
+            d->timeout_ticks, d->poll_limit);
+        WRITE(SOC_MAILBOX_BASE, MAILBOX_REG_IRQ_ENABLE, 0);
+        if (waited != VISION_OK) return waited;
+        if (causes & 4u) { d->quarantined = 1; return VISION_NEEDS_RESET; }
+        if (causes != 1u && causes != 2u) return VISION_VERIFY_ERROR;
+    }
     for (s->polls = 0; s->polls < d->poll_limit; ++s->polls) {
         if (d->control == VISION_RV32_CONTROL) {
             if (rd(d, SOC_MAILBOX_BASE + MAILBOX_REG_AXI_STATUS, &status)) return VISION_IO_ERROR;
@@ -211,6 +227,8 @@ static int dispatch(vision_device_t *d, vision_diagnostics_t *s)
                 return VISION_NEEDS_RESET;
             }
             if (rd(d, SOC_MAILBOX_BASE + MAILBOX_REG_STATUS, &status)) return VISION_IO_ERROR;
+            if (d->use_irq && status != (causes == 1u ? MAILBOX_STATUS_DONE : MAILBOX_STATUS_ERROR))
+                return VISION_VERIFY_ERROR;
             if (status & (MAILBOX_STATUS_DONE | MAILBOX_STATUS_ERROR)) {
                 if (rd(d, SOC_MAILBOX_BASE + MAILBOX_REG_JOB_ID, &result)) return VISION_IO_ERROR;
                 if (result != s->job_id) return VISION_VERIFY_ERROR;
@@ -218,6 +236,7 @@ static int dispatch(vision_device_t *d, vision_diagnostics_t *s)
                     rd(d, SOC_MAILBOX_BASE + MAILBOX_REG_RESULT, &result)) return VISION_IO_ERROR;
                 s->firmware_error = error;
                 snapshot(d, s); /* Capture evidence before ACK clears terminal registers. */
+                if (d->quarantined) return VISION_NEEDS_RESET;
                 if (status != MAILBOX_STATUS_DONE || error || result != MAILBOX_RESULT_OK) {
                     WRITE(SOC_MAILBOX_BASE, MAILBOX_REG_COMMAND, MAILBOX_CMD_ACK);
                     if (error == MAILBOX_ERROR_RECOVERY) d->quarantined = 1;
@@ -254,12 +273,24 @@ int vision_run_image(vision_device_t *d, const uint8_t image[784],
 {
     uint64_t start, mark, next;
     int result;
+    uint32_t axi_status;
     if (!d || !image || !model || !model->fc1_weights || !model->fc1_bias ||
         !model->fc2_weights || !model->fc2_bias || !run) return VISION_INVALID;
     memset(run, 0, sizeof(*run)); run->prediction = -1;
     if (d->quarantined) return run->diagnostics.result = VISION_NEEDS_RESET;
     if (!d->ready) return run->diagnostics.result = VISION_INVALID;
     start = mark = now(d);
+    /* Faults may arrive between jobs. Discover quarantine before changing or
+     * cleaning any DMA buffer, not only later inside descriptor dispatch. */
+    if (rd(d, SOC_MAILBOX_BASE + MAILBOX_REG_AXI_STATUS, &axi_status)) {
+        d->quarantined = 1;
+        return run->diagnostics.result = VISION_IO_ERROR;
+    }
+    if (axi_status & MAILBOX_AXI_QUARANTINED) {
+        d->quarantined = 1;
+        (void)mailbox_snapshot(d, &run->diagnostics);
+        return run->diagnostics.result = VISION_NEEDS_RESET;
+    }
     run->diagnostics.job_id = ++d->next_job;
     run->diagnostics.stage = VISION_STAGE_PREPARE;
     for (int i = 0; i < 784; ++i) d->input.cpu[i] = image[i];
@@ -290,6 +321,7 @@ int vision_run_image(vision_device_t *d, const uint8_t image[784],
     run->diagnostics.stage = VISION_STAGE_IDLE;
     return VISION_OK;
 failed:
+    if (d->use_irq) (void)wr(d, SOC_MAILBOX_BASE + MAILBOX_REG_IRQ_ENABLE, 0);
     snapshot(d, &run->diagnostics);
     if (run->diagnostics.axi_status & MAILBOX_AXI_QUARANTINED) result = VISION_NEEDS_RESET;
     run->diagnostics.result = result;
@@ -300,6 +332,18 @@ failed:
     } else if (result != VISION_JOB_FAILED && result != VISION_BUSY) d->quarantined = 1;
     run->total = now(d)-start;
     return result;
+}
+
+int vision_device_set_irq(vision_device_t *d, int enable)
+{
+    uint32_t status;
+    if (!d || !d->ready || d->quarantined || d->control != VISION_RV32_CONTROL ||
+        (enable && (!d->platform.irq_prepare || !d->platform.irq_wait))) return VISION_INVALID;
+    if (rd(d, SOC_MAILBOX_BASE + MAILBOX_REG_STATUS, &status)) return VISION_IO_ERROR;
+    if (status) return VISION_BUSY;
+    if (wr(d, SOC_MAILBOX_BASE + MAILBOX_REG_IRQ_ENABLE, 0)) return VISION_IO_ERROR;
+    d->use_irq = !!enable;
+    return VISION_OK;
 }
 
 const char *vision_stage_name(enum vision_stage stage)

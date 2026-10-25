@@ -53,7 +53,8 @@ foreach rtl_file [concat $common_files $pipeline_files $soc_files \
 
 set subsystem_root [file join $ip_repo_dir "rv32_pipeline_axi_subsystem"]
 if {[file exists $subsystem_root]} { file delete -force $subsystem_root }
-create_project -in_memory rv32_subsystem_packager -part $package_part_name
+create_project -force rv32_subsystem_packager \
+    [file join $repo_root "vivado/rv32_packager_vivado"] -part $package_part_name
 add_files -norecurse [concat $common_files $pipeline_files $soc_files]
 set_property top rv32_pipeline_axi_subsystem [current_fileset]
 update_compile_order -fileset sources_1
@@ -82,7 +83,8 @@ close_project
 
 set mailbox_root [file join $ip_repo_dir "rv32_job_mailbox"]
 if {[file exists $mailbox_root]} { file delete -force $mailbox_root }
-create_project -in_memory rv32_mailbox_packager -part $package_part_name
+create_project -force rv32_mailbox_packager \
+    [file join $repo_root "vivado/mailbox_packager_vivado"] -part $package_part_name
 add_files -norecurse [file join $repo_root "rtl/riscv/soc/rv32_job_mailbox.sv"]
 set_property top rv32_job_mailbox [current_fileset]
 update_compile_order -fileset sources_1

@@ -16,8 +16,8 @@
 #include <stdio.h>
 #include <string.h>
 
-static uint32_t input_words[784] __attribute__((aligned(64)));
-static uint32_t output_words[784] __attribute__((aligned(64)));
+static uint32_t input_words[784] __attribute__((aligned(64), section(".vision_dma_input")));
+static uint32_t output_words[784] __attribute__((aligned(64), section(".vision_dma_output")));
 static const unsigned char *const images[] = {sample_000_input_image, sample_001_input_image,
     sample_002_input_image, sample_003_input_image, sample_004_input_image,
     sample_005_input_image, sample_006_input_image, sample_007_input_image};
@@ -35,17 +35,28 @@ int main(void)
     memcpy(front.shift, vector_conv_shift, sizeof(front.shift));
     memcpy(front.relu, vector_conv_relu_enable, sizeof(front.relu));
     vision_print_csv_header();
-    for (int control = 0; control < 2; ++control) {
-        int status = vision_device_init(&device, &platform,
-            vision_vitis_buffer(input_words, sizeof(input_words)),
-            vision_vitis_buffer(output_words, sizeof(output_words)),
-            (enum vision_control)control, platform.ticks_per_second, 1000000);
-        if (status == 0) status = vision_device_boot(&device, rv32_controller_imem_words,
-            RV32_CONTROLLER_IMEM_WORD_COUNT, rv32_controller_dmem_words,
-            RV32_CONTROLLER_DMEM_WORD_COUNT, &front);
+    if (vision_vitis_irq_init() != VISION_OK) { puts("# gic_init_failed"); return 1; }
+    /* ARM first while RV32 is held reset. Never hot-reset a running MMIO
+     * poller between measurements: its outstanding AXI read would quarantine. */
+    for (int path = 0; path < 3; ++path) {
+        int status = 0;
+        if (path != 2) {
+            status = vision_device_init(&device, &platform,
+                vision_vitis_buffer(input_words, sizeof(input_words)),
+                vision_vitis_buffer(output_words, sizeof(output_words)),
+                path == 0 ? VISION_ARM_CONTROL : VISION_RV32_CONTROL,
+                platform.ticks_per_second, 10000000);
+            if (status == 0) status = vision_device_boot(&device, rv32_controller_imem_words,
+                RV32_CONTROLLER_IMEM_WORD_COUNT, rv32_controller_dmem_words,
+                RV32_CONTROLLER_DMEM_WORD_COUNT, &front);
+        } else status = vision_device_set_irq(&device, 1);
         if (status != 0) {
             printf("# boot_failed=%d; verify IP version, generated platform and reserved low-DDR buffers\n", status);
             return 1;
+        }
+        if (path == 0) {
+            memset(input_words, 0, sizeof(input_words));
+            memset(output_words, 0, sizeof(output_words));
         }
         for (unsigned sample = 0; sample < 8; ++sample) for (unsigned iteration = 0; iteration < 6; ++iteration) {
             status = vision_run_image(&device, images[sample], &vector_classifier_model, &run);
@@ -61,7 +72,7 @@ int main(void)
                 puts("# software_hardware_feature_or_prediction_mismatch"); return 3;
             }
             vision_print_run(&device, sample, iteration, iteration == 0, &run);
-            if (control == 0) vision_print_software(&platform, sample, iteration, iteration == 0, &software);
+            if (path == 0) vision_print_software(&platform, sample, iteration, iteration == 0, &software);
         }
     }
     return 0;

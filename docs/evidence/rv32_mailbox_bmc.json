@@ -1,0 +1,21 @@
+{
+  "engine": "Yosys 0.70 (git sha1 28ba3cb92, Release, Clang /workspace/YoWASP/yosys/wasi-sdk-33.0-x86_64-linux/share/cmake/../..//bin/clang++ 22.1.0)",
+  "result": "PASS",
+  "mode": "bounded-safety",
+  "depth_cycles": 32,
+  "scope": "ownership, descriptor freeze, IRQ mask/W1C/set dominance, first-fault retention, AXI response stability, reset",
+  "assumptions": [
+    "reset asserted at initial step"
+  ],
+  "unbounded_proof": false,
+  "liveness_proven": false,
+  "frontend_normalization": "Two function returns changed to equivalent function-name assignments in ignored derivative; properties inserted before endmodule",
+  "mutations_detected": [
+    "W1C removed",
+    "first-fault overwritten"
+  ],
+  "source_sha256_lf": {
+    "rtl/riscv/soc/rv32_job_mailbox.sv": "c9a47f7b42d0e4c4579cadc2a2d9f6811b58d5b58d7419c566031eff47419931",
+    "verif/formal/rv32_mailbox_properties.svh": "4ddc117283eb5507527808283a8802a1f9740ef45fa0aa9cab7ab2c23ee37513"
+  }
+}

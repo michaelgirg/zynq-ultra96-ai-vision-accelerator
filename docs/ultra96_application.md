@@ -9,17 +9,18 @@ the saved model files or synthesizable RTL.
 
 | Layer | Evidence |
 | --- | --- |
-| Native functional backend | 110 runtime checks per model; 16 image/model combinations, 96 modeled DMA frames and 144 benchmark rows including software references |
+| Native functional backend | 160 runtime checks per model; 16 image/model combinations, 144 modeled DMA frames and 192 benchmark rows including software references |
 | RTL capture replay | The same application consumes baseline/candidate feature frames captured by the real Questa SoC test |
-| Cortex-A53 adapter/demo | Six AArch64 objects compiled with strict warnings against installed Vitis 2025.2 standalone-v9.4 headers |
-| Benchmark guards | Ten unit tests; reject model/timer/sample/prediction mismatches, failed runs and fabricated model-speedup comparisons |
+| Cortex-A53 adapter/demo | Two linked ELFs, real XSA-generated standalone BSP, strict warnings, all allocated ELF sections checked, reserved low-DDR DMA ranges |
+| Benchmark guards | Eleven unit tests; reject model/timer/sample/prediction mismatches, failed runs and fabricated model-speedup comparisons |
 | Board measurements | Not run; no board latency, throughput or speedup result is claimed |
 
 The [native application record](evidence/application_validation.json) binds
 source identities and checkpoint hashes. Native-mode timing values are deliberately
-not presented as FPGA performance. The Vitis cross-compile uses compile-only
-`xparameters.h`/`bspconfig.h` fixtures; it is **not** a generated BSP, linked
-deployable ELF, or hardware test.
+not presented as FPGA performance. The [Vitis build record](evidence/vitis_application.json)
+binds both linked ELFs to the fresh XSA and source hashes. The earlier compile-only
+fixtures/check script were removed; this flow uses actual generated headers and libraries.
+Linking an ELF is not execution on the board.
 
 ## Source layout
 
@@ -64,7 +65,22 @@ The [mailbox diagnostics](job_diagnostics.md) expose control-clock job timing,
 first-fault records and live AXI quarantine. The runtime captures these before
 ACK and, on bridge quarantine, reads only the mailbox: it must not revisit the
 potentially hung DMA/accelerator target. Native models leave hardware cycle
-measurements at zero. The demo remains polling-based, not interrupt-driven.
+measurements at zero.
+
+The demo runs direct ARM polling first while RV32 is held reset, then boots RV32
+once for polling followed by IRQ measurements. It never hot-resets the running
+controller to switch paths. In IRQ mode the GIC ISR latches causes and clears
+only the IRQ W1C register; main validates terminal ownership/job ID/results and
+captures diagnostics before job ACK. Completion, failure and watchdog causes
+are enabled; stale causes are cleared while masked before submission. Spurious,
+conflicting or lost events fail closed without classifying stale output.
+
+The wait spins on an ISR-latched flag with timer and iteration bounds, **not** on
+mailbox status MMIO. No unbounded WFI or CPU-sleep/power-saving claim is made.
+Watchdog cause takes priority and blocks target MMIO, ACK and buffer reuse.
+Native tests exercise this contract; actual GIC interrupt delivery still needs
+board execution. The GIC ID is derived from the real generated SDT (this XSA:
+SPI 92 + 32 = 124), not a guessed hard-coded BSP fixture.
 
 A timer cannot protect a CPU stalled inside an MMIO access. The Vitis backend
 uses direct device accesses; a nonresponding AXI slave still requires external
@@ -98,41 +114,61 @@ python scripts/validate_vision_app.py --cc cl `
 `input.mem expected_features.mem repeats [rtl_capture.mem]`. Its first iteration
 is tagged as warmup. GCC/Clang CI also runs AddressSanitizer/UndefinedBehaviorSanitizer.
 
-Cross-compile against installed A53 headers without running Vitis/Vivado:
+Build the real standalone platform and both baseline/candidate applications
+from an already completed SoC XSA (no Vivado run or board connection):
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/check_vitis_application.ps1 `
-  -VitisRoot "<install>/Vitis" `
+powershell -ExecutionPolicy Bypass -File scripts/build_vitis_application.ps1 `
+  -VitisPath "<install>/Vitis/bin/vitis.bat" `
   -ToolchainBin "<install>/gnu/aarch64/nt/aarch64-none/bin"
 ```
 
-## Later Vitis deployment
+Optional `-Xsa <soc.xsa>` and `-Workspace <dedicated-build-directory>` keep large
+generated builds on another drive. Defaults are the repo's generated SoC XSA
+and ignored `vitis/vision_standalone/`. The script refuses an existing platform
+with a different XSA; use a new workspace rather than deleting an existing one.
+It checks a per-invocation success receipt because the Vitis launcher can return
+zero even when Python failed. Windows cleanup targets only its own spawned
+server process tree to avoid stale workspace locks, never another Vitis instance.
 
-1. Generate a standalone **Cortex-A53 64-bit** domain from the updated SoC XSA.
-   Use the generated BSP headers/libraries, never the compile-contract fixtures.
-   Confirm its address map matches `config/soc_address_map.json`.
-2. Compile the six sources listed in `check_vitis_application.ps1`, with include
-   directories for the selected classifier bundle, firmware images, register
-   headers and sample images. Define `VISION_MODEL_SHA256` to the selected
-   classifier manifest's 64-character checkpoint hash (a raw preprocessing token).
-   The build-check script supplies this automatically; manual Vitis builds must too.
-3. Reserve/link the two aligned arrays in identity-mapped low DDR, separate from
-   code, heap, stack and other DMA users. The runtime rejects out-of-window pointers;
-   that check does not itself reserve memory. Configure MMIO as Device memory.
-4. Link the actual standalone BSP, program hardware and launch the application.
+Outputs are `vision_baseline/build/vision_baseline.elf`,
+`vision_candidate/build/vision_candidate.elf`, a generated platform with FSBL/PMU
+firmware and `vision_build_evidence.json` under the workspace. The linker limits
+code/data/heap/stack to `[0x00100000,0x10000000)` and reserves an exclusive 8 KiB
+DMA region at `0x10000000`; frame arrays occupy separate aligned 4 KiB slots.
+Linker assertions plus symbol and allocated-section checks reject overlap,
+wrong sizes, missing sections, or unexpected placement. Four portable negative
+layout tests run in CI. This is an identity-mapped standalone application, not
+a Linux virtual-address DMA driver or a shared DDR allocator.
+
+The generated BSP is configured for **PS UART1, J1, 115200 8N1**. Vitis initially
+selected UART0 (the wireless-module UART), so using its default would hide output
+from the debug pod. The connector mapping is documented in the
+[Avnet hardware guide](https://www.avnet.com/wcm/connect/b85b9556-0b2a-42b3-ad6a-8dcf3eac1ff9/Ultra96-V2-HW-User-Guide-v1_3.pdf?MOD=AJPERES).
+
+## Later physical-board deployment
+
+1. Use the bitstream-inclusive XSA paired with the linked application; verify
+   its hash against the build receipt. The adapter compile-checks generated BSP
+   peripheral addresses against the canonical SoC address map.
+2. Start from a coordinated platform reset, initialize PS/DDR through the
+   generated platform boot flow and program the matching PL bitstream.
+3. Launch one selected model ELF with exclusive DMA/mailbox ownership. Confirm
+   identity-mapped cacheable DDR and Device MMIO settings from the standalone BSP.
    It runs eight images with one warmup plus five measured iterations per path.
    It checks **all output features and predictions** against the software reference.
-5. Capture UART CSV and run `summarize_vision_benchmark.py` on it.
+4. Capture UART CSV and run `summarize_vision_benchmark.py` on it. Repeat with a
+   coordinated reset for the other model; do not hot-reload a polling RV32 core.
 
 The adapter uses AMD's cache/MMIO/timer APIs, following the cache-ownership
 pattern in the [AXI DMA example](https://github.com/Xilinx/embeddedsw/blob/xilinx_v2025.2/XilinxProcessorIPLib/drivers/axidma/examples/xaxidma_example_simple_poll.c).
-The generated BSP controls the real timer frequency; the compile fixture does not.
+The generated BSP controls the real timer frequency.
 
 ## Benchmark interpretation
 
-Three paths use the same image, convolution parameters and float classifier:
-portable scalar software, RV32-controlled acceleration and direct ARM-controlled
-acceleration. Boot/model programming occurs once per path and is excluded from
+Four paths use the same image, convolution parameters and float classifier:
+portable scalar software, RV32 polling, RV32 mailbox IRQ and direct ARM polling.
+Boot/model programming occurs before measurement and is excluded from
 steady-state latency. Report preparation, cache clean, submission/wait, output
 invalidate, classifier and total separately. `software_front_ticks` measures
 the scalar software convolution. Concurrent DMA channels are not misrepresented

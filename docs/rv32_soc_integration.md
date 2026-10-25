@@ -115,18 +115,24 @@ quarantines later jobs until platform recovery/reboot. See the
 | DMA control | RV32 programs MM2S/S2MM, behavioral DMA moves the stream, and mailbox receives completion |
 | compiled firmware | GCC-built RV32IM image boots at reset vector zero, completes DMA jobs, and reports expected bad-job, bad-ID, MM2S, S2MM and accelerator failure codes |
 | full-frame SoC | Real portal boot/mailbox/CDC; all modes, baseline/candidate coefficients, golden outputs, native C predictions and next-job recovery |
-| mailbox | 265 checks covering ownership, IRQ masking/W1C, timestamps, first-fault retention, counters, strobes and response stalls |
+| mailbox | 15,885 checks, including 320 randomized jobs across 20 seeds: ownership, IRQ masking/W1C, timestamps, first-fault retention, counters, strobes and response stalls |
 | AXI watchdog | 184 checks across six stalled-channel scenarios, timeout boundaries, late drain, CPU reset, quarantine and real mailbox fault IRQs |
 | preservation | complete imported RV32IM pipeline/cache/M-extension regression remains passing |
 
 The behavioral DMA model verifies controller sequencing without requiring an
 encrypted Xilinx simulation model.
 
-## Ultra96-V2 implementation evidence
+## Current Ultra96-V2 implementation
 
-These are preserved checkpoint results, not signoff for the later operand-
-retention/frame-abort and mailbox/watchdog RTL. Rebuild Vivado before
-deploying current recovery-aware firmware.
+The October 24, 2026 build includes current recovery/operand/mailbox/watchdog
+RTL. It closes setup at +1.203 ns WNS and hold at +0.008 ns WHS with zero failing
+endpoints, using 17,790 LUTs, 22,593 registers, 38 BRAM tiles and 49 DSPs.
+See [source-bound signoff and warning dispositions](implementation_signoff.md).
+
+## Historical Ultra96-V2 implementation
+
+The following older checkpoint predates operand-retention/frame-abort and
+mailbox/watchdog RTL. Do not mix its hashes or metrics with the current build.
 
 Vivado 2025.2 completed synthesis, routing, report generation, bitstream
 generation, and bitstream-inclusive XSA export for `xczu3eg-sbva484-1-i`.

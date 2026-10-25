@@ -1,9 +1,10 @@
 # Production-V2 Release Status
 
-These are preserved checkpoint results. Later `0x00020001` frame-abort and
-RV32 operand-retention and mailbox/watchdog source changes have local simulation checks but require
-a user-run Vivado rebuild. Timing/resource and licensed-UVM evidence here must
-not be attributed to that newer RTL revision.
+The [current RV32 implementation checkpoint](implementation_signoff.md) includes
+`0x00020001` recovery, retained operands and mailbox/watchdog RTL: +1.203 ns
+setup WNS, +0.008 ns hold WHS, zero failing endpoints. Its source/artifact-bound
+record is separate from the earlier accelerator-only snapshot below. Licensed
+UVM results remain baseline evidence, not a new licensed regression.
 
 ## Verification
 
@@ -16,7 +17,7 @@ not be attributed to that newer RTL revision.
 | UVM | 11 focused tests plus a 100-seed randomized predictor run pass with zero UVM errors/fatals or assertion failures |
 | Functional coverage | 100% targeted coverage |
 
-## Ultra96-V2 implementation evidence
+## Preserved accelerator-only Ultra96-V2 implementation
 
 | Metric | Result |
 | --- | ---: |

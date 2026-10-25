@@ -5,6 +5,9 @@ The production hardware flow targets the Ultra96-V2 board and the `xczu3eg-sbva4
 ## Board setup
 
 Install the Ultra96-V2 board definition in Vivado, or point `ULTRA96_BOARD_REPO` at the board-store directory containing the board files. The repository includes `vivado/scripts/check_ultra96_v2_board.tcl` for a quick board-part check.
+The V2 entry sources the shared `check_ultra96_v1_board.tcl` helper with V2
+selection enabled; its historical filename does not select a V1 board.
+Keep the entire tracked script directory together when copying the build flow.
 
 ## Vivado flow
 
@@ -21,6 +24,14 @@ vivado -mode batch -source vivado/scripts/run_ultra96_v2_production_v2_implement
 On Windows, `scripts/run_ultra96_v2_local_vivado.ps1` wraps these stages. Pass `-VivadoPath` when Vivado is not on `PATH`, and pass `-BoardRepo` when the board definition is stored outside Vivado's default board store.
 
 Generated Vivado projects, logs, reports, bitstreams, and XSA files are intentionally excluded from source control. Release binaries are distributed separately with the matching SHA256 manifest.
+The optional 1/2/4-filter sweep runs out-of-context synthesis with a 100 MHz
+clock constraint; its estimates are not routed implementation/signoff results.
+It is separate from the RV32 `-Stage all` build.
+
+Without launching Vivado, check source dependencies with
+`python scripts/check_vivado_dependencies.py`. CI also executes the board probe
+and sweep orchestration with mocked Vivado commands (`tclsh tb/scripts/vivado_flow_test.tcl`);
+that test does not claim synthesis or real board-store discovery.
 
 All Tcl paths are derived from `[info script]`, and PowerShell wrappers derive
 the repository root from `$PSScriptRoot`. Vivado, board-store, and toolchain
@@ -39,8 +50,7 @@ On Windows, run all RV32 packaging, project creation, synthesis,
 implementation, reports, bitstream, and XSA stages with:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\run_ultra96_v2_rv32_soc_local.ps1 `
-  -Stage all
+powershell -ExecutionPolicy Bypass -File .\scripts\run_ultra96_v2_rv32_soc_local.ps1 -Stage all
 ```
 
 The `package` and `all` stages refresh both the accelerator and RV32 IP
@@ -58,9 +68,9 @@ bitstream-inclusive XSA are generated only after implementation succeeds. The
 RV32 project creator safely replaces this ignored generated project directory,
 so `-Stage all` can be rerun after a failed build.
 
-The completed reference build closes timing at +2.047 ns setup WNS and +0.011
+The completed current build closes timing at +1.203 ns setup WNS and +0.008
 ns hold WHS with zero failing endpoints. See
 `docs/rv32_soc_integration.md` for utilization and signoff details, and
-`hardware/reports/ultra96_v2_rv32_soc_sha256.txt` for artifact hashes.
+`hardware/reports/ultra96_v2_rv32_soc_2026_10_24_sha256.txt` for artifact hashes.
 This checkpoint establishes implementation readiness; execution on a physical
 Ultra96-V2 remains a separate runtime-validation step.

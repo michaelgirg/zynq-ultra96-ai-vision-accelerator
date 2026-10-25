@@ -36,7 +36,7 @@ void vision_print_run(const vision_device_t *d, unsigned sample, unsigned iterat
     printf("%s,%s,%s,%u,%u,%d,%" PRIu64 ",%" PRIu64 ",%" PRIu64 ",%" PRIu64
            ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 ",%d,%d,%u,%s,%u,%u,%u,%u,%u,%u,%d,0,%s\n",
         d->platform.backend_name, d->platform.physical_hardware ? "board" : "host-functional-model",
-        d->control == VISION_RV32_CONTROL ? "rv32-control" : "arm-control",
+        d->control == VISION_RV32_CONTROL ? (d->use_irq ? "rv32-irq" : "rv32-control") : "arm-control",
         sample, iteration, warmup, d->platform.ticks_per_second, r->prepare, r->cache_clean,
         r->submit_wait, r->cache_invalidate, r->classifier, r->total, r->prediction,
         s->result, s->job_id, vision_stage_name(s->stage), s->firmware_error,

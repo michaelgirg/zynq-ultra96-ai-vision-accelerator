@@ -94,7 +94,7 @@ MMIO access, nor make CPU-only or peripheral-only reset a safe recovery action.
 ## Local verification and deployment boundary
 
 The [source-bound simulation record](evidence/job_diagnostics.json) reports
-265 mailbox checks and 184 watchdog checks, including six stalled
+15,885 mailbox checks (320 randomized jobs / 20 seeds) and 184 watchdog checks, including six stalled
 channel scenarios, late-response drain, exact timeout boundaries, processor
 backpressure, CPU-reset abandonment and real bridge-to-mailbox fault IRQs. The
 full SoC gate checks job IRQ/cause, timestamp ordering/duration and cumulative
@@ -110,7 +110,8 @@ quarantine path with a functional model, not execution of RV32 firmware.
 Run `scripts/run_riscv_regression.ps1`, `scripts/run_soc_end_to_end.ps1`,
 `scripts/run_bounded_formal.py` and `scripts/validate_vision_app.py` using their
 documented tool overrides. Source/header/register-document consistency is in CI.
-The new RTL and block-design wiring require a **user-run Vivado rebuild** before
-deployment. Preserved bitstreams, timing/resource reports and licensed UVM
-results do not sign off these changes. No Vivado or physical-board run was used
-to produce this verification evidence.
+The RTL and block-design wiring are now implemented in the
+[October 24 Vivado checkpoint](implementation_signoff.md). That implementation
+record is distinct from the simulation receipts above (their `vivado_rebuilt`
+field describes the simulation-only gate). Licensed UVM evidence remains the
+older baseline. Physical-board execution is not claimed.

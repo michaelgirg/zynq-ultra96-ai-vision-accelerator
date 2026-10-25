@@ -17,6 +17,11 @@ class BenchmarkTests(unittest.TestCase):
         result = summarize([row(domain="board"), row("rv32-control", "board", "20")])
         self.assertEqual(result["speedups"][0]["paired_median_end_to_end_speedup"], 5)
 
+    def test_irq_path_requires_real_board_pair(self):
+        self.assertEqual(summarize([row(), row('rv32-irq', ticks='20')])['speedups'], [])
+        result = summarize([row(domain='board'), row('rv32-irq', 'board', '25')])
+        self.assertEqual(result['speedups'][0]['paired_median_end_to_end_speedup'], 4)
+
     def test_warmup_removed(self):
         warmup = row(ticks="999"); warmup["warmup"] = "1"
         self.assertEqual(summarize([row(), warmup])["groups"][0]["median_us"], 100)

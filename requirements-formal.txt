@@ -1,2 +1,2 @@
-# Optional local WebAssembly formal runner; CI can use native Yosys instead.
+# Pinned modern engine for mailbox CI; also usable locally without a license.
 yowasp-yosys==0.70.0.0.post1259

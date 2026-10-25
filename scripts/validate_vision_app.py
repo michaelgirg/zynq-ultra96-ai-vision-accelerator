@@ -85,8 +85,8 @@ def main() -> None:
                     command += [str(args.capture_root / f"{name}_{sample}.mem")]
                 result = subprocess.run(command, check=True, capture_output=True, text=True)
                 rows = list(csv.DictReader(io.StringIO(result.stdout)))
-                if len(rows) != 9:
-                    raise AssertionError("expected one warmup plus two measurements for each of three paths")
+                if len(rows) != 12:
+                    raise AssertionError("expected one warmup plus two measurements for each of four paths")
                 for row in rows:
                     if row["measurement_domain"] != "host-functional-model" or int(row["result"]):
                         raise AssertionError("native backend misrepresented a board result")
@@ -98,7 +98,7 @@ def main() -> None:
                         raise AssertionError("unbound model identity in benchmark")
                     row.update(model=name, sample=sample)
                 csv_rows += rows
-                frames += 6  # two control paths x (one warmup + two measurements)
+                frames += 9  # three control paths x (one warmup + two measurements)
             for malformed in ("0", "-1", "1001", "2junk"):
                 command[3] = malformed
                 if subprocess.run(command, capture_output=True).returncode == 0:

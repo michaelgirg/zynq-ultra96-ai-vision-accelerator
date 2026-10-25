@@ -53,6 +53,7 @@ static void complete(vision_sim_t *s)
         s->mailbox[1] = error ? 8u : 4u;
         s->mailbox[8] = error ? 0u : 0x600du;
         s->mailbox[9] = error;
+        s->mailbox[MAILBOX_REG_IRQ_STATUS/4] |= error ? 2u : 1u;
         if (error) {
             s->tx_status = s->rx_status = 2;
             s->accel_status = s->accel_error = 0;
@@ -138,8 +139,10 @@ static int write32(void *context, uintptr_t address, uint32_t value)
         if (s->resetn) return -1;
         if (base == SOC_HOST_IMEM_BASE) s->imem[offset/4] = value;
         else s->dmem[offset/4] = value;
-    } else if (base == SOC_MAILBOX_BASE && offset < 48) {
-        if (offset == 0x2c) s->resetn = (int)(value & 1u);
+    } else if (base == SOC_MAILBOX_BASE && offset < sizeof(s->mailbox)) {
+        if (offset == MAILBOX_REG_IRQ_STATUS) s->mailbox[offset/4] &= ~value;
+        else if (offset == MAILBOX_REG_IRQ_ENABLE) s->mailbox[offset/4] = value;
+        else if (offset == 0x2c) s->resetn = (int)(value & 1u);
         else if (offset == 0) {
             if (value == MAILBOX_CMD_SUBMIT) {
                 if (!s->resetn || s->mailbox[1]) return -1;
@@ -151,6 +154,7 @@ static int write32(void *context, uintptr_t address, uint32_t value)
             if (value == MAILBOX_CMD_ACK) {
                 if (!(s->mailbox[1] & 12u)) return -1;
                 s->mailbox[1] = s->mailbox[8] = s->mailbox[9] = 0;
+                s->mailbox[MAILBOX_REG_IRQ_STATUS/4] &= ~3u;
             }
         } else s->mailbox[offset/4] = value;
     } else if (base == SOC_VISION_ACCEL_BASE) {
@@ -219,6 +223,39 @@ static int invalidate(void *context, void *address, size_t count)
 }
 static void barrier_cb(void *context) { ++((vision_sim_t *)context)->barriers; }
 
+static int irq_prepare(void *context)
+{
+    vision_sim_t *s = context;
+    return s->mailbox[MAILBOX_REG_IRQ_ENABLE/4] ? -1 : 0;
+}
+static int irq_wait(void *context, uint32_t *causes, uint64_t timeout, uint32_t limit)
+{
+    vision_sim_t *s = context;
+    uint64_t start = ticks(s);
+    ++s->irq_waits;
+    *causes = 0;
+    for (uint32_t i = 0; i < limit; ++i) {
+        if (s->fault == SIM_BUS_TIMEOUT) {
+            uint32_t ignored;
+            (void)read32(s, SOC_MAILBOX_BASE + MAILBOX_REG_AXI_STATUS, &ignored);
+            s->mailbox[MAILBOX_REG_IRQ_STATUS/4] |= 4;
+        }
+        if (s->fault == SIM_IRQ_SPURIOUS) { *causes = 1; return 0; }
+        complete(s);
+        if (s->fault == SIM_IRQ_CONFLICT) s->mailbox[MAILBOX_REG_IRQ_STATUS/4] |= 3;
+        if (s->fault != SIM_IRQ_LOST) {
+            *causes = s->mailbox[MAILBOX_REG_IRQ_STATUS/4] & s->mailbox[MAILBOX_REG_IRQ_ENABLE/4];
+            if (*causes) {
+                s->mailbox[MAILBOX_REG_IRQ_STATUS/4] &= ~*causes;
+                ++s->irq_deliveries;
+                return 0;
+            }
+        }
+        if (ticks(s) - start >= timeout) break;
+    }
+    return VISION_DEADLINE;
+}
+
 void vision_sim_init(vision_sim_t *s)
 {
     memset(s, 0, sizeof(*s)); s->tx_status = s->rx_status = 2;
@@ -233,7 +270,7 @@ vision_platform_t vision_sim_platform(vision_sim_t *s)
     frequency = 1000000000u;
 #endif
     vision_platform_t p = {s, read32, write32, clean, invalidate, barrier_cb, ticks,
-        frequency, "native-functional-model", 0};
+        frequency, "native-functional-model", 0, irq_prepare, irq_wait};
     return p;
 }
 vision_dma_buffer_t vision_sim_input(vision_sim_t *s)

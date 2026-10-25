@@ -5,7 +5,9 @@
 - [Complete Ultra96 application and benchmark](ultra96_application.md): native
   functional backend, RTL capture replay, A53 adapter, diagnostics and limits.
 - [Executed bounded formal check](bounded_formal.md): real AXI-master safety,
-  initial-reset assumption, 32-step bound and intentional-defect sensitivity.
+  mailbox ownership/IRQ/first-fault safety, 32-step bounds and defect sensitivity.
+- [Current implementation and warning review](implementation_signoff.md):
+  source-bound routed metrics, fresh artifact hashes and explicit DRC dispositions.
 
 - [End-to-end SoC simulation](soc_end_to_end_verification.md): real portal boot,
   full-frame golden checks, native C predictions, failure recovery and limits.

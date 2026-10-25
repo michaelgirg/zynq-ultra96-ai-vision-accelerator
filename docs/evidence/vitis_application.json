@@ -1,0 +1,61 @@
+{
+  "tool": "Vitis 2025.2",
+  "xsa_sha256": "dd3b483b3f2420d8f2975a071e33e4170ced1e9352445941baa4fbe7f7864f36",
+  "generated_bsp": true,
+  "linked_elf": true,
+  "hardware_execution": false,
+  "mailbox_gic_id": 124,
+  "console": "PS UART1 / J1, 115200 8N1",
+  "program_ddr": {
+    "origin": "0x00100000",
+    "length": "0x0ff00000"
+  },
+  "dma_reserved": {
+    "origin": "0x10000000",
+    "length": "0x2000",
+    "frame_bytes": 3136
+  },
+  "models": [
+    {
+      "model": "baseline",
+      "checkpoint_sha256": "4d68fb0cbcbf0c903a7dfd742d06085a08e35a1aec532d37e51086cb4bc2fbc4",
+      "artifact": "vision_baseline.elf",
+      "sha256": "e424bd84e70ee1558d45157537138b61c76f0bd77d674f9a9a1a49b6fbe19c23",
+      "allocated_sections_checked": 21,
+      "input_address": "0x10000000",
+      "output_address": "0x10001000"
+    },
+    {
+      "model": "candidate",
+      "checkpoint_sha256": "21cd1606e65999461ca14f87a6f9c71817a572e76b973c6ebfdda05e281d3e8a",
+      "artifact": "vision_candidate.elf",
+      "sha256": "d174ff100bb12843fc0f8ad9453b15a1193ebb03f50835ec2e1798d8fd0bacd0",
+      "allocated_sections_checked": 21,
+      "input_address": "0x10000000",
+      "output_address": "0x10001000"
+    }
+  ],
+  "firmware_images_sha256_lf": "fb6494900659721f3ea7d53bd23f5ee6bdb7b652a21ae5630e5a677ba7687b59",
+  "firmware_elf_sha256": "17837bf3fcf3b36b601a4cae0e977fa486815b6eac35e138dc5efeebb0d2903c",
+  "source_sha256_lf": {
+    "software/ultra96/rv32_controller.c": "e856281ad98ab7bf60e156f0867200b39e274c8b9549abbede339811a5a9a2bb",
+    "software/ultra96/rv32_controller.h": "457e236d0cdbe0a6ae5d172b42f4e375c2a582ab080ac165c42de692afb271ef",
+    "software/ultra96/test_rv32_controller.c": "31293ea8f5e5d8199809dceb4c1dbc7ce28af08e7564bba64b06e5d1213c7511",
+    "software/ultra96/test_vector_classifier.c": "582e11de3c09fa522c1b5f078fdaea19ebde85824888ae6df6214ebd8e369b2a",
+    "software/ultra96/test_vision_runtime.c": "5172b5ec7f7aff7471d89ef443b5c8884eb2983365a3d3b7cdb50827fd10cc95",
+    "software/ultra96/vector_classifier.c": "8e0dce2a74aa0bafb62bf69bb15feec3fa90b22cb6607dcbfbd4659018746bf2",
+    "software/ultra96/vector_classifier.h": "953c70df2b8b5157a7e289244a72df566e8e336792c96880e8fb8db67c21af50",
+    "software/ultra96/vector_front_reference.c": "255d9920a67ab887dd031b575aaa0c91b8ef738b55de9447dfba06011a1448b6",
+    "software/ultra96/vector_front_reference.h": "5a766974d601f856427778d2bce898a5550201652e926e55a43871c85e364daa",
+    "software/ultra96/vision_benchmark.c": "0c8c5952400aadc2b3ebcb863a7fdc6a63212d224cc5c175d900f7432ef5e376",
+    "software/ultra96/vision_benchmark.h": "f4ead5da5c2d9dc09805515495b8a45d385e82c3e3feb55ce6b1f2c9c115c2b4",
+    "software/ultra96/vision_demo_native.c": "89dd0b715ac68b76b8fd543228ccde600127b22b2a583ea3d671806fbbec9306",
+    "software/ultra96/vision_demo_vitis.c": "4dacadaca34162b585c4ab40fbdee56b7589436d4b2b618d8ad8eddd21d543d2",
+    "software/ultra96/vision_platform_vitis.c": "6242934d622ac4b9f1eaddb027b99ffb2ed6bd83f5992f530d44c3fc1ee26b2a",
+    "software/ultra96/vision_platform_vitis.h": "5ad5f82a16aef023315a829cdb068f95a2b3321f7bd0cdba73ded09f522820f9",
+    "software/ultra96/vision_runtime.c": "24a850a6e6eb0fa0a89e14eba3d5678f487cd21bf6ae191f59c336ca4105a94d",
+    "software/ultra96/vision_runtime.h": "26784a3623382c83bb22ed3790fa72f3a4f265d509c46816139723112456845d",
+    "software/ultra96/vision_sim.c": "3e6ecc9e337f2e1968dd8952bacccd7a07c44919f5d6b15300911b166f22fb6f",
+    "software/ultra96/vision_sim.h": "098336a1b9ce0185a69d2b78621e81f9ba2add8223c337eb257240da30d332eb"
+  }
+}
