@@ -68,9 +68,9 @@ bitstream-inclusive XSA are generated only after implementation succeeds. The
 RV32 project creator safely replaces this ignored generated project directory,
 so `-Stage all` can be rerun after a failed build.
 
-The completed reference build closes timing at +2.047 ns setup WNS and +0.011
+The completed current build closes timing at +1.203 ns setup WNS and +0.008
 ns hold WHS with zero failing endpoints. See
 `docs/rv32_soc_integration.md` for utilization and signoff details, and
-`hardware/reports/ultra96_v2_rv32_soc_sha256.txt` for artifact hashes.
+`hardware/reports/ultra96_v2_rv32_soc_2026_10_24_sha256.txt` for artifact hashes.
 This checkpoint establishes implementation readiness; execution on a physical
 Ultra96-V2 remains a separate runtime-validation step.

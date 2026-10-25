@@ -37,8 +37,9 @@ interrupt status, register-version discovery, and a dual-clock CDC bridge.
 
 The [Ultra96 application](docs/ultra96_application.md) joins firmware boot,
 runtime model programming, cache-safe DMA, prediction, recovery and benchmark
-CSV. Its native functional backend is locally tested; its Vitis/A53 adapter is
-cross-compiled. Native-model timings are not reported as FPGA performance.
+CSV, with polling and mailbox-IRQ host paths. Baseline/candidate A53 ELFs link
+against a real generated Vitis BSP with reserved DMA sections. Native-model
+timings are not reported as FPGA performance.
 
 A heterogeneous SoC configuration adds a five-stage RV32IM control processor
 with private caches, uncached AXI4-Lite accelerator/DMA access, an ARM/RV32 job
@@ -64,15 +65,16 @@ host interrupts, sticky first-fault records and safe AXI timeout quarantine.
 | Item | Routed result |
 | --- | --- |
 | Target and clocks | Ultra96-V2; 100 MHz control, 150.015 MHz stream/data |
-| Timing | +2.047 ns setup WNS, +0.011 ns hold WHS, zero failing endpoints |
+| Timing | +1.203 ns setup WNS, +0.008 ns hold WHS, zero failing endpoints |
 | Signoff checks | Zero CDC warning/critical, methodology, and DRC error/critical-warning findings |
-| Utilization | 23.62% LUT, 15.51% registers, 17.59% BRAM, 13.61% DSP |
+| Utilization | 25.21% LUT, 16.01% registers, 17.59% BRAM, 13.61% DSP |
 | RV32 local memory | 64 KiB IMEM + 64 KiB DMEM mapped to 32 RAMB36E2 blocks |
-| Estimated power | 2.119 W |
+| Estimated power | 2.126 W, vectorless estimate |
 
-Implementation tables describe preserved routed checkpoints. Current recovery,
-operand-retention and mailbox/watchdog RTL require a fresh Vivado build;
-the recorded timing/resource numbers are not signoff for those changes.
+The RV32 checkpoint includes current recovery, operand-retention and
+mailbox/watchdog RTL, built with Vivado 2025.2 on October 24, 2026. Its
+[source-bound implementation evidence and warning review](docs/implementation_signoff.md)
+are separate from the earlier accelerator-only release snapshot.
 
 ## Verification summary
 
@@ -93,6 +95,11 @@ the recorded timing/resource numbers are not signoff for those changes.
 - [Executed AXI-master formal check](docs/bounded_formal.md): 32-step bounded
   safety pass, including timeout/quarantine; the harness detects intentional
   write-data and quarantine defects.
+- Mailbox verification: 320 randomized jobs / 20 seeds, 15,885 checks; separate
+  32-step bounded formal ownership/IRQ/W1C/first-fault/reset checks detect two
+  intentional defects.
+- Host runtime: 160 checks per model, including IRQ failures/quarantine;
+  144 modeled DMA frames with exact baseline/candidate feature parity.
 
 Licensed UVM/coverage results above are preserved baseline evidence. The current
 version-expectation update is locally compiled; a licensed rerun is separate.
@@ -125,9 +132,11 @@ Vivado/Vitis projects, simulator databases, logs, local machine settings, and
 release binaries are excluded from the source tree.
 
 The RV32 SoC build also emits `u96v2rv32_wrapper.bit` and
-`ultra96_v2_rv32_ai_vision_soc.xsa`. The reference checkpoint hashes use only
+`ultra96_v2_rv32_ai_vision_soc.xsa`. The historical checkpoint hashes use only
 portable artifact basenames and are tracked in
 [`hardware/reports/ultra96_v2_rv32_soc_sha256.txt`](hardware/reports/ultra96_v2_rv32_soc_sha256.txt).
+The fresh implementation uses the separate
+[October 24 manifest](hardware/reports/ultra96_v2_rv32_soc_2026_10_24_sha256.txt).
 
 ## Ultra96-V2 production flow
 

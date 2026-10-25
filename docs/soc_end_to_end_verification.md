@@ -102,10 +102,10 @@ suite always responds.
 
 ## Implementation boundary
 
-Frame abort, operand retention and mailbox/watchdog changes affect synthesizable RTL. Current accelerator discovery
-is `0x00020001`; preserved routed bitstream/XSA and timing/resource numbers are
-the earlier `0x00020000` checkpoint. New firmware rejects that older version.
-A user-run Vivado rebuild is required before deploying recovery-aware firmware.
+Frame abort, operand retention and mailbox/watchdog changes affect synthesizable
+RTL. Current accelerator discovery is `0x00020001`; the
+[October 24 implementation](implementation_signoff.md) now includes those changes.
+The earlier preserved `0x00020000` checkpoint is historical and rejected by new firmware.
 The complete application also requires the new mailbox version `0x00010000`.
 Existing licensed UVM results remain baseline evidence; the version-expectation
 update is locally compiled, with licensed rerun separate. This simulation does

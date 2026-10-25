@@ -1,4 +1,4 @@
-# Executed bounded formal safety check
+# Executed bounded formal safety checks
 
 The real `rv32_axi_lite_master` passed Yosys SAT safety checking for 32 steps.
 The [evidence record](evidence/rv32_axi_master_bmc.json) binds the engine version,
@@ -36,3 +36,24 @@ Logs, the derived mutant and results are ignored under
 `generated/experiments/formal`. CI repeats the check and sensitivity test with
 native Yosys. Modes and bounds are distinct concepts in the
 [YosysHQ formal documentation](https://symbiyosys.readthedocs.io/en/latest/reference.html).
+
+## Mailbox ownership and diagnostics
+
+The actual `rv32_job_mailbox` also passes 32-step bounded safety checking:
+ownership exclusivity, descriptor freeze while owned, response stability,
+IRQ enable/W1C/set dominance, terminal commands, first-fault retention and reset.
+Only initial reset is assumed; subsequent bus inputs, stalls, strobes, reset
+and fault inputs are arbitrary. This is not a liveness or unbounded proof.
+
+```text
+python scripts/run_mailbox_formal.py --depth 32
+```
+
+The optional `--yosys .venv/Scripts/yowasp-yosys.exe` runner works locally.
+[Evidence](evidence/rv32_mailbox_bmc.json) binds RTL and properties. The runner
+creates an ignored derivative of the actual module, changes two unsupported
+function-return statements to equivalent function-name assignments, and inserts
+the immediate assertions from `verif/formal/rv32_mailbox_properties.svh`.
+It never substitutes a behavioral model or edits the production RTL. Removing
+W1C or permitting first-fault overwrites makes the same check fail. Logs and
+mutants stay in `generated/experiments/mailbox-formal`; CI repeats both checks.
